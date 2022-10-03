@@ -1,0 +1,594 @@
+#=============================================================================#
+# File: Clustering.R
+# Date: October 5, 2022										                                      
+# Author: Jarno Koetsier                                                      
+# Data: 'dataMatrix_filtered.RData','featureInfo.Rdata','sampleInfo_filtered.RData'
+#=============================================================================#
+
+
+###############################################################################
+
+# 0. Preparation
+
+###############################################################################
+
+# Clear working environment
+rm(list = ls())
+
+# Set working directory
+homeDir <- "C:/Users/Gebruiker/OneDrive/MSB year 2/MSB1015 Scientific Programming/Project"
+setwd(paste0(homeDir, "/Clustering"))
+
+# Install and load required packages
+CRANpackages <- c("tidyverse",    
+                  "corrr",
+                  "igraph",
+                  'ggraph',
+                  "RColorBrewer",
+                  "randomForest",
+                  "cluster",
+                  "tidyverse",
+                  "heatmaply",
+                  "gridExtra",
+                  "grid",
+                  "ggrepel",
+                  "caret",
+                  "glmnet")
+
+# Install (if not yet installed) and load the required CRAN packages: 
+for (pkg in CRANpackages) {
+  if (!requireNamespace(pkg, quietly = TRUE))
+    install.packages(pkg, ask = FALSE)
+  require(as.character(pkg), character.only = TRUE)
+}
+
+# Load data
+load(paste0(homeDir, "/Pre-Processing/", "dataMatrix_filtered.RData"))
+load(paste0(homeDir, "/Pre-Processing/", "featureInfo.Rdata"))
+load(paste0(homeDir, "/Pre-Processing/", "sampleInfo_filtered.RData"))
+
+# Get Malignant samples only
+all(sampleInfo_filtered$id == rownames(dataMatrix_filtered))
+dataMatrix_malignant <- dataMatrix_filtered[sampleInfo_filtered$diagnosis == "Malignant",]
+
+# Scale the data
+dataMatrix_malignant_scaled <- t((t(dataMatrix_malignant) - rowMeans(t(dataMatrix_malignant)))/(apply(t(dataMatrix_malignant),1,sd)))
+
+
+###############################################################################
+
+# Network-based clustering (Newman-Girvan Algorithm)
+
+###############################################################################
+
+
+#******************************************************************************#
+# PCA for feature selection
+#******************************************************************************#
+
+
+# Peform pca
+pcaList <-  prcomp(dataMatrix_malignant_scaled,        
+                   retx = TRUE,
+                   center = FALSE,
+                   scale = FALSE)
+
+
+# Explained variance
+explVar <- round(((pcaList$sdev^2)/sum(pcaList$sdev^2))*100,2)
+
+cumVar <- rep(NA, length(explVar))
+for (var in 1:length(explVar)) {
+  if (var != 1){
+    cumVar[var] <- cumVar[var - 1] + explVar[var]
+  } else{
+    cumVar[var] <- explVar[1]
+  }
+}
+
+nPCs <- max(which(cumVar < 95))
+
+
+# Score plot
+PCA_scores <- as.data.frame(pcaList$x[,1:nPCs])
+
+
+#******************************************************************************#
+# Network construction
+#******************************************************************************#
+
+# Construct co-expression matrix
+res.cor <- correlate(t(PCA_scores), diagonal = 0)
+res.cor <- as.data.frame(res.cor)
+row.names(res.cor) <- res.cor$term
+res.cor[1] <- NULL
+
+# Filter co-expression matrix
+res.cor.filtered <- res.cor
+res.cor.filtered[res.cor.filtered < 0.6] <- 0
+res.cor.filtered[abs(res.cor.filtered) >= 0.6] <- 1
+
+# Make graph
+graph <- igraph::graph_from_adjacency_matrix(as.matrix(res.cor.filtered), weighted=NULL)
+graph <- as.undirected(graph, mode = "collapse")
+
+# Find communities in the network
+communities <- edge.betweenness.community(graph, directed = FALSE)
+clusters <- as.character(communities$membership)
+
+# Check number of samples per cluster:
+table(clusters)
+
+# Clusters 1, 2 and 3 are the major clusters
+clusters[as.numeric(clusters) > 3] <- "Other"
+
+# Add cluster labels to graph object
+V(graph)$membership <- as.character(clusters)
+
+# Make network
+plotNetwork <- ggraph(graph, layout = "stress") +
+  geom_edge_link(color = "lightgrey") +
+  geom_node_point(aes(color = membership), size = 3) +
+  #geom_node_label(aes(label = name, fill = membership, size = 5)) +
+  theme_void() +
+  theme(legend.position = 'none') +
+  scale_color_manual(values = c(brewer.pal(3, "Dark2"), "grey"))
+
+# Save plot
+ggsave(plotNetwork, file = "NetworkClusters.png", width = 8, height = 8)
+
+# Save clusters from network-based approach
+clusters_network <- data.frame(
+  ID = communities$names,
+  Cluster_Network = clusters
+)
+
+###############################################################################
+
+# Unsupervised random forest + Hierarchical clustering
+
+###############################################################################
+
+#******************************************************************************#
+# Unsupervised random forest
+#******************************************************************************#
+
+# Construct unsupervised random forest
+set.seed(123)
+rf <- randomForest(x = dataMatrix_malignant,
+                     importance = TRUE,
+                     ntree = 1000,
+                     nodesize = 10)
+# proximity matrix
+prox <- rf$proximity
+
+# Convert to dissimilarity matrix
+diss <- 1 - rf$proximity
+
+
+#******************************************************************************#
+# Hierarchical-clustering on dissimilarity martrix
+#******************************************************************************#
+
+# Perform hierarchical clustering on dissimilarity matrix
+hierClust <- hclust(as.dist(diss), method = "ward.D2")
+
+# Get clusters (k = 3)
+clusters <-  cutree(hierClust, k = 3)
+clusters_rf <- data.frame(
+  ID = names(clusters),
+  Cluster_rf = as.character(clusters)
+)
+
+# Plot dendrogram
+hierPlot <- hierClust
+hierPlot$labels <- clusters_rf$Cluster_rf
+dendrogram <- ggraph(hierPlot,layout = 'dendrogram', circular = FALSE, height = height) +
+  geom_edge_elbow() +
+  geom_node_point(aes(filter = leaf, color = label), shape = 15, size = 1) +
+  geom_rect(aes(xmin = 0, xmax = table(clusters_rf$Cluster_rf)[1], ymin = 0, ymax = 3),
+            fill = "#1B9E77", alpha = 0.005, color = "#1B9E77", size = 1.5) +
+  geom_rect(aes(xmin = table(clusters_rf$Cluster_rf)[1], 
+                xmax = table(clusters_rf$Cluster_rf)[1] + table(clusters_rf$Cluster_rf)[3], 
+                ymin = 0, ymax = 3), fill = "#7570B3", alpha = 0.005, color = "#7570B3", size = 1.5) +
+  geom_rect(aes(xmin = table(clusters_rf$Cluster_rf)[1] + table(clusters_rf$Cluster_rf)[3], 
+                xmax = table(clusters_rf$Cluster_rf)[1] + table(clusters_rf$Cluster_rf)[3] + table(clusters_rf$Cluster_rf)[2], 
+                ymin = 0, ymax = 3), fill = "#D95F02", alpha = 0.005, color = "#D95F02", size = 1.5) +
+  #geom_hline(yintercept = nrow(df) - k + 0.5, size = 1.5, color = "red", linetype = "dashed") +
+  labs(color = "Cluster") +
+  theme_void() +
+  scale_color_brewer(palette = "Dark2")
+
+# Save plot
+ggsave(dendrogram, file = "Dendrogram.png", width = 8, height = 8)
+
+
+
+###############################################################################
+
+# Combined Cluster visualization
+
+###############################################################################
+
+# Compare network-based and URF-based clusters
+table(clusters_rf$Cluster_rf, clusters_network$Cluster_Network)
+
+# Save clusters
+clusterDF <- inner_join(clusters_network, clusters_rf, by = c("ID" = "ID"))
+save(clusterDF, file = "clusterDF.RData")
+
+#******************************************************************************#
+# Heatmap
+#******************************************************************************#
+
+# load clusterDF object (if needed)
+load("clusterDF.RData")
+
+# Colors for cluster visualization
+colors <- c(brewer.pal(3, "Dark2"), "grey")
+levels(colors) <- c("1", "2", "3", "Other")
+
+# Make and save heatmap as html file
+heatmaply(
+  prox,
+  Rowv = dend,
+  Colv = dend,
+  key.title = "Proximity\nValue",
+  col_side_colors = data.frame("URF Clusters" = factor(clusterDF$Cluster_rf),
+                               "Network Clusters" = factor(clusterDF$Cluster_Network),
+                               check.names = FALSE),
+  col_side_palette = colorRampPalette(colors),
+  showticklabels = c(FALSE, FALSE),
+  file = "heatmapClusters.html"
+)
+
+#******************************************************************************#
+# Principal coordinate analysis (PCoA)
+#******************************************************************************#
+
+# PCoA is done by performing PCA on the dissimilarity matrix
+
+# Center data
+diss_centered <- diss - rowMeans(diss) - colMeans(diss) + mean(diss)
+
+# Peform pca
+pc0aList <-  prcomp(diss_centered,        
+                    retx = TRUE,
+                    center = FALSE,
+                    scale = FALSE)
+
+
+# Explained variance
+explVarPCoA <- round(((pcaList$sdev^2)/sum(pcaList$sdev^2))*100,2)
+
+# Get PCoA scores
+plotPCoA_scores <- as.data.frame(pcaList$x[,1:10])
+plotPCoA_scores$ID <- rownames(plotPCoA_scores)
+plotPCoA_scores <- inner_join(plotPCoA_scores, sampleInfo_filtered, by = c("ID" = "id"))
+plotPCoA_scores <- inner_join(plotPCoA_scores, clusterDF, by = c("ID" = "ID"))
+
+#plotPCoA_scores <- inner_join(plotPCoA_scores, clusters_network, by = c("ID" = "ID"))
+#plotPCoA_scores <- inner_join(plotPCoA_scores, clusters_rf, by = c("ID" = "ID"))
+
+
+# Make PCoA score plots:
+
+# Color by URF-based clusters
+PCoAurf <- ggplot(plotPCoA_scores, aes(x = PC1, y = PC2, color = Cluster_rf)) +
+  geom_point(size = 2, alpha = 0.9) +
+  xlab(paste0("PCo1 (", explVarPCoA[1],"%)")) +
+  ylab(paste0("PCo2 (", explVarPCoA[2],"%)")) +
+  ggtitle("URF-based clusters") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5,
+                                  face = "bold",
+                                  size = 16),
+        plot.subtitle = element_text(hjust = 0.5,
+                                     size = 10),
+        legend.position = "bottom",
+        legend.title = element_blank()) +
+  scale_color_manual(values = c(brewer.pal(3, "Dark2")))
+
+# Color by network-based clusters
+PCoAnetwork <- ggplot(plotPCoA_scores, aes(x = PC1, y = PC2, color = Cluster_Network)) +
+  geom_point(size = 2, alpha = 0.9) +
+  xlab(paste0("PCo1 (", explVarPCoA[1],"%)")) +
+  ylab(paste0("PCo2 (", explVarPCoA[2],"%)")) +
+  ggtitle("Network-based clusters") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5,
+                                  face = "bold",
+                                  size = 16),
+        plot.subtitle = element_text(hjust = 0.5,
+                                     size = 10),
+        legend.position = "bottom",
+        legend.title = element_blank()) +
+  scale_color_manual(values = c(brewer.pal(3, "Dark2"), "grey"))
+
+# Combine into single image and save plot
+ggsave("PCoAplot.png", 
+       grid.arrange(PCoAurf, 
+                    PCoAnetwork, 
+                    ncol = 2, 
+                    nrow = 1,
+                    top = textGrob("PCoA Plot",gp=gpar(fontsize=20,font=2))), 
+       width = 12, height = 6)
+
+
+
+#******************************************************************************#
+# PCA
+#******************************************************************************#
+
+# Peform pca
+pcaList <-  prcomp(dataMatrix_malignant_scaled,        
+                   retx = TRUE,
+                   center = FALSE,
+                   scale = FALSE)
+
+
+# Explained variance
+explVar <- round(((pcaList$sdev^2)/sum(pcaList$sdev^2))*100,2)
+
+# collect PCA scores into a data frame
+plotPCA_scores <- as.data.frame(pcaList$x)
+plotPCA_scores$ID <- rownames(plotPCA_scores)
+
+# Combine data frame with sample and cluster information
+plotPCA_scores <- inner_join(plotPCA_scores, sampleInfo_filtered, by = c("ID" = "id"))
+plotPCA_scores <- inner_join(plotPCA_scores, clusterDF, by = c("ID" = "ID"))
+
+# Make PCA plots:
+
+# Color by URF-based clusters
+PCAurf <- ggplot(plotPCA_scores, aes(x = PC1, y = PC2, color = Cluster_rf)) +
+  geom_point(size = 2, alpha = 0.9) +
+  xlab(paste0("PC1 (", explVar[1],"%)")) +
+  ylab(paste0("PC2 (", explVar[2],"%)")) +
+  ggtitle("URF-based clusters") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5,
+                                  face = "bold",
+                                  size = 16),
+        plot.subtitle = element_text(hjust = 0.5,
+                                     size = 10),
+        legend.position = "bottom",
+        legend.title = element_blank()) +
+  scale_color_manual(values = c(brewer.pal(3, "Dark2")))
+
+# Color by network-based clusters
+PCAnetwork <- ggplot(plotPCA_scores, aes(x = PC1, y = PC2, color = Cluster_Network)) +
+  geom_point(size = 2, alpha = 0.9) +
+  xlab(paste0("PC1 (", explVar[1],"%)")) +
+  ylab(paste0("PC2 (", explVar[2],"%)")) +
+  ggtitle("Network-based clusters") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5,
+                                  face = "bold",
+                                  size = 16),
+        plot.subtitle = element_text(hjust = 0.5,
+                                     size = 10),
+        legend.position = "bottom",
+        legend.title = element_blank()) +
+  scale_color_manual(values = c(brewer.pal(3, "Dark2"), "grey"))
+
+# Combine into single image and save plot
+ggsave("PCAplot1.png", 
+       grid.arrange(PCAurf, 
+                    PCAnetwork,
+                    ncol = 2, 
+                    nrow = 1,
+                    top = textGrob("PCA Plot",gp=gpar(fontsize=20,font=2))), 
+       width = 10, height = 6)
+
+
+# Combine clusters
+plotPCA_scores$combined <- paste0(plotPCA_scores$Cluster_Network, "/", plotPCA_scores$Cluster_rf)
+plotPCA_scores$combined[!(plotPCA_scores$combined%in% c("1/1", "2/3", "3/2"))] <- "Other"
+
+
+# Get PCA projections of beneign samples:
+
+# 1) Scale beneign samples using the maligannt samples
+dataMatrix_beneign <- dataMatrix_filtered[!(rownames(dataMatrix_filtered) %in% rownames(dataMatrix_malignant)),]
+beneign_scaled <-  t((t(dataMatrix_beneign) - rowMeans(t(dataMatrix_malignant)))/(apply(t(dataMatrix_malignant),1,sd)))
+
+# 2) Caluclate the projections
+projectBeneign <- as.data.frame(as.matrix(beneign_scaled) %*% as.matrix(pcaList$rotation))
+projectBeneign$ID <- rownames(projectBeneign)
+projectBeneign$combined <- rep("Beneign", nrow(projectBeneign))
+
+# Collect PCA loadings into a data frame
+plotPCA_loadings <- data.frame(pcaList$rotation)
+plotPCA_loadings$Feature <- rownames(plotPCA_loadings)
+plotPCA_loadings <- inner_join(plotPCA_loadings, featureInfo, by = c("Feature" = "Name"))
+
+
+# PCA plot color by combined clusters/diagnosis
+PCAcombined <- ggplot(plotPCA_scores, aes(x = PC1, y = PC2, color = combined)) +
+  geom_point(size = 2) +
+  geom_point(data = projectBeneign, aes(x = PC1, y = PC2, color = combined),alpha = 0.7) +
+  xlab(paste0("PC1 (", explVar[1],"%)")) +
+  ylab(paste0("PC2 (", explVar[2],"%)")) +
+  ggtitle("Score Plot") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5,
+                                  face = "bold",
+                                  size = 16),
+        plot.subtitle = element_text(hjust = 0.5,
+                                     size = 10),
+        legend.position = "bottom",
+        legend.title = element_blank()) +
+  scale_color_manual(values = c(brewer.pal(3, "Set1"),  "grey", "black"))
+
+# Make loading plot
+loading_plot <- ggplot(plotPCA_loadings, aes(x = PC1, y = PC2, label = Name1, color = Statistic)) +
+  geom_segment(data = plotPCA_loadings, aes(x = 0, y = 0, xend = PC1, yend = PC2), color = "grey") +
+  geom_point() +
+  geom_text_repel(size = 2.5, max.overlaps = 50) +
+  ggtitle(label = "Loading Plot") +
+  xlab(paste0("PC1 (", explVar[1],"%)")) +
+  ylab(paste0("PC2 (", explVar[2],"%)")) +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5,
+                                  face = "bold",
+                                  size = 16),
+        plot.subtitle = element_text(hjust = 0.5,
+                                     size = 10),
+        legend.position = "bottom",
+        legend.title = element_blank()) +
+  scale_color_brewer(palette = "Set1")
+
+
+# Combine into single image and save plot
+ggsave("PCAplot2.png", 
+       grid.arrange(PCAcombined, 
+                    loading_plot,
+                    ncol = 2, 
+                    nrow = 1,
+       bottom = textGrob("NOTE: The PCA model is constructed using the malignant samples only. The beneign samples are projected.",gp=gpar(fontsize=10,font=3))),
+       width = 10, height = 6)
+
+
+###############################################################################
+
+# Clustering evaluation
+
+###############################################################################
+
+
+#******************************************************************************#
+# Important variables for clustering
+#******************************************************************************#
+
+# Get data from malignant samples
+plotMalignant <- dataMatrix_malignant
+
+# Add cluster labels to malignant samples
+plotMalignant$ID <- rownames(plotMalignant)
+plotMalignant<- inner_join(plotMalignant, clusterDF, by = c("ID" = "ID"))
+
+# Combine the two clusters
+plotMalignant$combined <- paste0(plotMalignant$Cluster_Network, "/", plotMalignant$Cluster_rf)
+plotMalignant$combined[!(plotMalignant$combined%in% c("1/1", "2/3", "3/2"))] <- "Other"
+
+# Get data from beneign samples
+plotBeneign <- dataMatrix_filtered[!(rownames(dataMatrix_filtered) %in% rownames(dataMatrix_malignant)),]
+plotBeneign$ID <- rownames(plotBeneign)
+plotBeneign$Cluster_Network <- rep(NA, nrow(plotBeneign))
+plotBeneign$Cluster_rf <- rep(NA, nrow(plotBeneign))
+plotBeneign$combined <- rep("Beneign", nrow(plotBeneign))
+
+# combine malignant and beneign samples
+plotAll <- rbind.data.frame(plotMalignant, plotBeneign)
+
+# In the loading plot, we saw that Mean Compactness and Mean Area might be able
+# to distinguish between the clusters. So, let;s make a scatter plot using these
+# two variables
+scatterPlot <- ggplot() +
+  geom_point(data = plotAll[plotAll$combined == "Beneign",], aes(x = exp(area_mean)-0.5, y = exp(compactness_mean)-0.5,  color = "Beneign"), size = 2, alpha = 0.7) +
+  geom_point(data = plotAll[plotAll$combined != "Beneign",], aes(x = exp(area_mean)-0.5, y = exp(compactness_mean)-0.5, color = combined), size = 3, alpha = 1) +
+  labs(color = "Cluster\n(Network/URF)") +
+  xlab("Mean Area") +
+  ylab("Mean Compactness") +
+  theme_classic() +
+  scale_color_manual(values = c(brewer.pal(3, "Set1"), "grey", "black"))
+
+# Save scatter plot
+ggsave(scatterPlot, file = "ScatterPlot.png", width = 10, height = 8)
+
+# Make box/violin plot of the Mean Area for the different clusters
+boxPlot_area <- ggplot(plotAll[plotAll$combined != "Other",], aes(x = combined, y = exp(area_mean)-0.5)) +
+  geom_violin(aes(fill = combined), alpha = 0.5) +
+  geom_boxplot(width=0.1, fill="white")+
+  geom_jitter(aes(color = combined),position=position_jitter(0.2)) +
+  ylab("Mean Area") +
+  xlab(NULL) +
+  ggtitle("Mean Area") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5,
+                                  face = "bold",
+                                  size = 16),
+        plot.subtitle = element_text(hjust = 0.5,
+                                     size = 10),
+        legend.position = "none") +
+  scale_color_manual(values = c(brewer.pal(3, "Set1"), "grey")) +
+  scale_fill_manual(values = c(brewer.pal(3, "Set1"), "grey"))
+
+# Make box/violin plot of the Mean Compactness for the different clusters
+boxPlot_compactness <- ggplot(plotAll[plotAll$combined != "Other",], aes(x = combined, y = exp(compactness_mean)-0.5)) +
+  geom_violin(aes(fill = combined), alpha = 0.5) +
+  geom_boxplot(width=0.1, fill="white")+
+  geom_jitter(aes(color = combined),position=position_jitter(0.2)) +
+  ylab("Mean Compactness") +
+  xlab(NULL) +
+  labs(color = "Cluster (Network/URF)", fill = "Cluster (Network/URF)") +
+  ggtitle("Mean Compactness") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5,
+                                  face = "bold",
+                                  size = 16),
+        plot.subtitle = element_text(hjust = 0.5,
+                                     size = 10),
+        legend.position = "bottom") +
+  scale_color_manual(values = c(brewer.pal(3, "Set1"), "grey")) +
+  scale_fill_manual(values = c(brewer.pal(3, "Set1"), "grey"))
+
+# Save boxplots into a single image
+ggsave("clusterEvaluation.png", 
+       grid.arrange(boxPlot_area,
+                    boxPlot_compactness,
+                    ncol = 1, 
+                    nrow = 2), 
+       width = 10, height = 10)
+
+
+
+#******************************************************************************#
+# Link classification performance to clusters
+#******************************************************************************#
+
+# Folder that contains the classification data
+classificationFolder <- paste0(homeDir, "/Classification/")
+
+# Load data
+load(paste0(classificationFolder,"trainingData.RData"))
+load(paste0(classificationFolder, "finalModel.RData"))
+load(paste0(classificationFolder, "modelInfo.RData"))
+
+# Prepare training data: scaling, removing unnecessary features
+trainingData_scaled <- t((t(trainingData) - rowMeans(t(trainingData)))/(apply(t(trainingData),1,sd)))
+excludedFeatures <- modelInfo$removedFeature[1:(30 - 4)]
+trainingData_filtered <- trainingData_scaled[,!(colnames(trainingData_scaled) %in% excludedFeatures)]
+
+# Get class probabilities of training data using the EN model
+prob <- as.data.frame(predict(finalModel, trainingData_filtered, type = "response"))
+
+# Prepare class probability data frame
+prob$ID <- rownames(prob)
+prob <- inner_join(prob, sampleInfo_filtered, by = c("ID" = "id"))
+prob_malignant <- prob[prob$diagnosis == "Malignant",]
+prob_malignant <- inner_join(prob_malignant, clusterDF, by = c("ID" = "ID"))
+prob_malignant$combined <- paste0(prob_malignant$Cluster_Network, "/", prob_malignant$Cluster_rf)
+prob_malignant$combined[!(prob_malignant$combined%in% c("1/1", "2/3", "3/2"))] <- "Other"
+
+# Make plot: class probability for each cluster
+ClusterProbabilities <- ggplot() +
+  geom_violin(data = prob_malignant[prob_malignant$combined != "Other",], 
+              aes(x = combined, y = s0, fill = combined),alpha = 0.2, scale = "width",
+              draw_quantiles = 0.5) +
+  geom_jitter(data = prob_malignant[prob_malignant$combined != "Other",], 
+              aes(x = combined, y = s0, color = combined),position=position_jitter(0.2),
+              size = 2) +
+  geom_hline(yintercept = 0.5, size = 1, color = "grey", linetype = "dashed") +
+  ylab("Class Probability") +
+  xlab("Cluster (Network/URF)") +
+  labs(color = "Cluster\n(Network/URF)", fill = "Cluster\n(Network/URF)") +
+  scale_color_manual(values = c(brewer.pal(3, "Set1"))) +
+  scale_fill_manual(values = c(brewer.pal(3, "Set1"))) +
+  theme_classic()
+
+# Save plot
+ggsave(ClusterProbabilities, file = "ClusterProbabilities.png", width = 10, height = 8)
+
+
