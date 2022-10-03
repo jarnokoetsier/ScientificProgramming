@@ -17,7 +17,7 @@
 rm(list = ls())
 
 # Set path to the project folder
-homeDir <- "C:/Users/Gebruiker/OneDrive/MSB year 2/MSB1015 Scientific Programming/Project"
+homeDir <- "C:/Users/Gebruiker/Documents/GitHub/ScientificProgramming"
 
 # Required packages
 CRANpackages <- c("tidyverse",     # Data formatting and plotting
@@ -337,6 +337,9 @@ ggsave(plot = accuracy_plot, filename = "accuracyPlot.png", width = 10, height =
 #Exclude the 27 worst features: after removing more than 24 features the CV accuracy decreases
 excludedFeatures <- modelInfo$removedFeature[1:(30 - n_features)]
 trainingData_filtered <- trainingData_scaled[,!(colnames(trainingData_scaled) %in% excludedFeatures)]
+
+# save filtered training data
+save(trainingData_filtered, file = "trainingData_filtered.RData")
 
 # Train model
 set.seed(123)
