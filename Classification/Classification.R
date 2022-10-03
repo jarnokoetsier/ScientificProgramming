@@ -40,9 +40,9 @@ for (pkg in CRANpackages) {
 setwd(paste0(homeDir, "/Classification"))
 
 # Load data
-load(paste0(homeDir, "/Pre-Processing/", "dataMatrix_filtered.RData"))
-load(paste0(homeDir, "/Pre-Processing/", "featureInfo.Rdata"))
-load(paste0(homeDir, "/Pre-Processing/", "sampleInfo_filtered.RData"))
+load(paste0(homeDir, "/Pre-processing/", "dataMatrix_filtered.RData"))
+load(paste0(homeDir, "/Pre-processing/", "featureInfo.Rdata"))
+load(paste0(homeDir, "/Pre-processing/", "sampleInfo_filtered.RData"))
 
 
 ################################################################################

@@ -43,9 +43,9 @@ for (pkg in CRANpackages) {
 }
 
 # Load data
-load(paste0(homeDir, "/Pre-Processing/", "dataMatrix_filtered.RData"))
-load(paste0(homeDir, "/Pre-Processing/", "featureInfo.Rdata"))
-load(paste0(homeDir, "/Pre-Processing/", "sampleInfo_filtered.RData"))
+load(paste0(homeDir, "/Pre-processing/", "dataMatrix_filtered.RData"))
+load(paste0(homeDir, "/Pre-processing/", "featureInfo.Rdata"))
+load(paste0(homeDir, "/Pre-processing/", "sampleInfo_filtered.RData"))
 
 # Get Malignant samples only
 all(sampleInfo_filtered$id == rownames(dataMatrix_filtered))
