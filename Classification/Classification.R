@@ -26,7 +26,9 @@ CRANpackages <- c("tidyverse",     # Data formatting and plotting
                   "glmnet",        # Construct elastic net model
                   "gridExtra",     # Combine images in single plot
                   "grid",          # Add elements to the combined image
-                  "UBL")           # Adasyn algorithm for class imbalance
+                  "UBL",           # Adasyn algorithm for class imbalance
+                  "foreach",
+                  "doParallel")
 
 
 # Install (if not yet installed) and load the required CRAN packages: 
@@ -92,7 +94,7 @@ trainingSamples <- rbind.data.frame(sampleInfo_B[selectedSamples_B$model,], samp
 # Check if samples are in correct order
 all(trainingSamples$id == rownames(trainingData))
 
-# Make a seperate object for the training labels/classes
+# Make a separate object for the training labels/classes
 trainingClass <- as.factor(trainingSamples$diagnosis)
 
 # Check the number of samples per class in the training data
@@ -105,7 +107,7 @@ testSamples <- rbind.data.frame(sampleInfo_B[selectedSamples_B$test,], sampleInf
 # Check if samples are in correct order
 all(testSamples$id == rownames(testData))
 
-# Make a seperate object for the test labels/classes
+# Make a separate object for the test labels/classes
 testClass <- as.factor(testSamples$diagnosis)
 
 # Check the number of samples per class in the test data
@@ -216,39 +218,45 @@ bestLambda <- rep(NA, (ncol(trainingData_scaled)-1))
 removedFeature <- rep(NA, (ncol(trainingData_scaled)-1))
 
 # Train model using all features
-set.seed(123)
-testModel <- logisticRegression(trainingData = trainingData_scaled,
+#set.seed(123)
+testModel <- logisticRegression_par(trainingData = trainingData_scaled,
                                 trainingClass = trainingClass,
                                 nfold = nrep,
                                 nrep = nfold,
                                 alpha = alpha,
                                 lambda = lambda)
 
+
 # The best parameter combination (alpha & lambda) for which the mean accuracy is the highest:
-bestParameters <- which.max(colMeans(testModel$Accuracy))
+#bestParameters <- which.max(colMeans(testModel$Accuracy))
+bestParameters <-  which.max(sapply(testModel, function(x){mean(x$Accuracy)}))
 
 # The worst feature has the lowest absolute average coefficient:
-#worstFeature <- which.min(abs(rowMeans(testModel$Coefficients[[bestParameters]])))
-worstFeature <- which.min(rowMeans(abs(testModel$Coefficients[[bestParameters]])))
+#worstFeature <- which.min(rowMeans(abs(testModel$Coefficients[[bestParameters]])))
+worstFeature <- which.min(rowMeans(abs(testModel[[bestParameters]]$Coefficients)))
+
 
 # Collect values of model
-accuracy[,1] <- testModel$Accuracy[,bestParameters]
-removedFeature[1] <- colnames(trainingData_scaled)[which.min(rowMeans(abs(testModel$Coefficients[[bestParameters]])))]
-bestAlpha[1] <- parameterGrid[bestParameters,1]
-bestLambda[1] <- parameterGrid[bestParameters,2]
+#accuracy[,1] <- testModel$Accuracy[,bestParameters]
+accuracy[,1] <- testModel[[bestParameters]]$Accuracy
+removedFeature[1] <- colnames(trainingData_scaled)[worstFeature]
+#bestAlpha[1] <- parameterGrid[bestParameters,1]
+bestAlpha[1] <- testModel[[bestParameters]]$Alpha
+bestLambda[1] <- testModel[[bestParameters]]$Lambda
 
 # Make copy of scaled data
 trainingData_scaled1 <- trainingData_scaled
 
 # Recursive feature elimination:
+start_time <- Sys.time()
 for (q in 1:(ncol(trainingData_scaled)-2)) {
   
   # remove worst feature
   trainingData_scaled1 <- trainingData_scaled1[,-worstFeature]
   
   # Train model
-  set.seed(123)
-  testModel <- logisticRegression(trainingData = trainingData_scaled1,
+  #set.seed(123)
+  testModel <- logisticRegression_par(trainingData = trainingData_scaled1,
                                   trainingClass = trainingClass,
                                   nfold = nrep,
                                   nrep = nfold,
@@ -256,18 +264,21 @@ for (q in 1:(ncol(trainingData_scaled)-2)) {
                                   lambda = lambda)
   
   # The best parameter combination (alpha & lambda) for which the mean accuracy is the highest:
-  bestParameters <- which.max(colMeans(testModel$Accuracy))
+  bestParameters <-  which.max(sapply(testModel, function(x){mean(x$Accuracy)}))
   
   # The worst feature has the lowest absolute average coefficient:
-  #worstFeature <- which.min(abs(rowMeans(testModel$Coefficients[[bestParameters]])))
-  worstFeature <- which.min(rowMeans(abs(testModel$Coefficients[[bestParameters]])))
+  worstFeature <- which.min(rowMeans(abs(testModel[[bestParameters]]$Coefficients)))
+  
   
   # Collect values
-  accuracy[,q + 1] <- testModel$Accuracy[,bestParameters]
-  removedFeature[q + 1] <- colnames(trainingData_scaled1)[which.min(rowMeans(abs(testModel$Coefficients[[bestParameters]])))]
-  bestAlpha[q + 1] <- parameterGrid[bestParameters,1]
-  bestLambda[q + 1] <- parameterGrid[bestParameters,2]
+  accuracy[,q+1] <- testModel[[bestParameters]]$Accuracy
+  removedFeature[q+1] <- colnames(trainingData_scaled1)[worstFeature]
+  bestAlpha[q+1] <- testModel[[bestParameters]]$Alpha
+  bestLambda[q+1] <- testModel[[bestParameters]]$Lambda
+  
 }
+end_time <- Sys.time()
+end_time - start_time
 
 # Combine values into a single list object
 modelInfo <- list(accuracy,
@@ -311,7 +322,7 @@ plotAccuracy <- inner_join(plotAccuracy, plotMeanAccuracy, by = c("nFeatures" = 
 n_features = 4
 accuracy_plot <- ggplot(plotAccuracy, aes(x = nFeatures, y = Accuracy.x, fill = Accuracy.y)) +
   geom_vline(xintercept = n_features, linetype = "dashed", color = "red", size = 1) +
-  geom_text(aes(x = n_features + 6, y = 0.82), label = paste0("Number of Features: ", n_features,
+  geom_text(aes(x = n_features + 6, y = 0.84), label = paste0("Number of Features: ", n_features,
                                                  "\nAlpha: ", modelInfo$bestAlpha[31 - n_features],
                                                  "\nLambda: ", round(modelInfo$bestLambda[31 - n_features],3)), color = "red") +
   geom_boxplot(aes(group = nFeatures), alpha = 0.5) +
@@ -343,7 +354,7 @@ save(trainingData_filtered, file = "trainingData_filtered.RData")
 
 # Train model
 set.seed(123)
-testModel <- logisticRegression(trainingData = trainingData_filtered,
+testModel <- logisticRegression_par(trainingData = trainingData_filtered,
                                 trainingClass = trainingClass,
                                 nfold = 5,
                                 nrep = 10,
@@ -351,7 +362,7 @@ testModel <- logisticRegression(trainingData = trainingData_filtered,
                                 lambda = modelInfo$bestLambda[31-n_features])
 
 # Get coefficients in the repeated CV
-coeffs <- as.data.frame(t(testModel$Coefficients[[1]]))
+coeffs <- as.data.frame(t(testModel[[1]]$Coefficients))
 colnames(coeffs) <- colnames(trainingData_filtered)
 coeffPlot <- gather(coeffs)
 coeffPlot <- inner_join(coeffPlot, featureInfo, by = c("key" = "Name"))

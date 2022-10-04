@@ -16,7 +16,7 @@
 rm(list = ls())
 
 # Set working directory
-homeDir <- "C:/Users/Gebruiker/OneDrive/MSB year 2/MSB1015 Scientific Programming/Project"
+homeDir <- "C:/Users/Gebruiker/Documents/GitHub/ScientificProgramming"
 setwd(paste0(homeDir, "/Clustering"))
 
 # Install and load required packages

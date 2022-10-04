@@ -18,7 +18,7 @@
 rm(list = ls())
 
 # Set path to the project folder
-homeDir <- "C:/Users/Gebruiker/OneDrive/MSB year 2/MSB1015 Scientific Programming/Project"
+homeDir <- "C:/Users/Gebruiker/Documents/GitHub/ScientificProgramming"
 
 # Required packages
 CRANpackages <- c("tidyverse",     # Data formatting and plotting
@@ -349,7 +349,7 @@ ggsave("PCA_ScorePlot_Transformation.png",
 
 #.............................................................................#
 # NOTE: Looking at the plots, the log-transformation seems to make the data
-# more normally distributed. So, we will work with the log transformaed data 
+# more normally distributed. So, we will work with the log transformed data 
 # for now.
 #.............................................................................#
 
