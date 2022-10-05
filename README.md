@@ -25,7 +25,7 @@ The aim of the analysis is three-fold:
 ## Analysing the data
 Before analysing the data, be aware of the following:
 
-1. Put the data file (Data.xlsx) into the main folder (.../ScientificProgramming/).
+1. Put the data file (Data.xlsx) into the main folder (..PATH../ScientificProgramming/).
 2. Furthermore, it is important to run the scripts in the following order:
   * Pre-processing
   * Classification
@@ -34,7 +34,7 @@ Before analysing the data, be aware of the following:
 
 
 ## App
-To run the app in RStudio, click on "Run App" in the top right corner when having either the ui.R, server.R, or global.R files open in the RStudio window.
+To run the app in RStudio, click on "Run App" in the top right corner when having either the ui.R, server.R, or global.R file open in the RStudio window.
 
 If this is not possible, run the following commands:
 
@@ -42,5 +42,5 @@ If this is not possible, run the following commands:
 
 `library(shiny)`
 
-`runApp(PATH/ScientificProgramming/App)`
+`runApp(..PATH../ScientificProgramming/App)`
 
