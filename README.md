@@ -2,7 +2,7 @@
 For the Scientific Programming (MSB1015) course, the *Breast Cancer Wisconsin (Diagnostic) Data Set* was analysed. This repository contains all the scripts used for this analysis.
 
 ## Data
-The original Breast Cancer Wisconsin (Diagnostic) Data Set can be downloaded on [Kaggle](https://www.kaggle.com/datasets/uciml/breast-cancer-wisconsin-data). However, for the current analysis a modified version of this data set was used.
+The original Breast Cancer Wisconsin (Diagnostic) Data Set can be downloaded from [Kaggle](https://www.kaggle.com/datasets/uciml/breast-cancer-wisconsin-data). However, for the current analysis a modified version of this data set was used.
 
 The data set includes the sample ID, the sample diagnosis (M: Malignant; B: Beneign), as well as 30 variables computed from a digitized image of a fine needle aspirate (FNA) of a breast mass. These 30 variables describe features from the cell nuclei in these images and encompasses the **mean**, standard error (**SE**), and the mean of the three largest values (**worst**) of the following 10 characteristics:
 1. **Radius:** mean of distances from center to points on the perimeter
@@ -28,9 +28,9 @@ Before analysing the data, be aware of the following:
 1) Put the data file (Data.xlsx) into the main folder (.../ScientificProgramming/).
 
 2) Furthermore, it is important to run the scripts in the following order:
-  1. Pre-processing
-  2. Classification
-  3. Clustering
+  ⋅⋅1. Pre-processing
+  ⋅⋅2. Classification
+  ⋅⋅3. Clustering
 
 3) Finally, please follow the instructions in the scripts carefully to ensure a successfull analysis.
 
