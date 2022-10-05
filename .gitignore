@@ -10,5 +10,7 @@
 # Ignore RData files
 *.RData
 
-# Ignore RHistory files
-*.Rhistory
+# Ignore .Rhistory files
+Classification/.Rhistory
+Clustering/.Rhistory
+Pre-Processing/.Rhistory
