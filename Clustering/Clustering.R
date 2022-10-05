@@ -213,6 +213,11 @@ ggsave(dendrogram, file = "Dendrogram.png", width = 8, height = 8)
 # Compare network-based and URF-based clusters
 table(clusters_rf$Cluster_rf, clusters_network$Cluster_Network)
 
+# So, we see the following:
+# -Cluster 1 from the Network and cluster 1 from the URF-Hierarchical clustering
+# -Cluster 2 from the Network and cluster 3 from the URF-Hierarchical clustering
+# -Cluster 3 from the Network and cluster 2 from the URF-Hierarchical clustering
+
 # Save clusters
 clusterDF <- inner_join(clusters_network, clusters_rf, by = c("ID" = "ID"))
 save(clusterDF, file = "clusterDF.RData")
@@ -221,9 +226,6 @@ save(clusterDF, file = "clusterDF.RData")
 # Heatmap
 #******************************************************************************#
 
-# load clusterDF object (if needed)
-load("clusterDF.RData")
-
 # Colors for cluster visualization
 colors <- c(brewer.pal(3, "Dark2"), "grey")
 levels(colors) <- c("1", "2", "3", "Other")
@@ -231,8 +233,8 @@ levels(colors) <- c("1", "2", "3", "Other")
 # Make and save heatmap as html file
 heatmaply(
   prox,
-  Rowv = dend,
-  Colv = dend,
+  Rowv = as.dendrogram(hierClust),
+  Colv = as.dendrogram(hierClust),
   key.title = "Proximity\nValue",
   col_side_colors = data.frame("URF Clusters" = factor(clusterDF$Cluster_rf),
                                "Network Clusters" = factor(clusterDF$Cluster_Network),
@@ -252,24 +254,20 @@ heatmaply(
 diss_centered <- diss - rowMeans(diss) - colMeans(diss) + mean(diss)
 
 # Peform pca
-pc0aList <-  prcomp(diss_centered,        
+pcoaList <-  prcomp(diss_centered,        
                     retx = TRUE,
                     center = FALSE,
                     scale = FALSE)
 
 
 # Explained variance
-explVarPCoA <- round(((pcaList$sdev^2)/sum(pcaList$sdev^2))*100,2)
+explVarPCoA <- round(((pcoaList$sdev^2)/sum(pcoaList$sdev^2))*100,2)
 
 # Get PCoA scores
-plotPCoA_scores <- as.data.frame(pcaList$x[,1:10])
+plotPCoA_scores <- as.data.frame(pcoaList$x[,1:10])
 plotPCoA_scores$ID <- rownames(plotPCoA_scores)
 plotPCoA_scores <- inner_join(plotPCoA_scores, sampleInfo_filtered, by = c("ID" = "id"))
 plotPCoA_scores <- inner_join(plotPCoA_scores, clusterDF, by = c("ID" = "ID"))
-
-#plotPCoA_scores <- inner_join(plotPCoA_scores, clusters_network, by = c("ID" = "ID"))
-#plotPCoA_scores <- inner_join(plotPCoA_scores, clusters_rf, by = c("ID" = "ID"))
-
 
 # Make PCoA score plots:
 
@@ -384,16 +382,25 @@ ggsave("PCAplot1.png",
 
 # Combine clusters
 plotPCA_scores$combined <- paste0(plotPCA_scores$Cluster_Network, "/", plotPCA_scores$Cluster_rf)
+
+# As we saw before, the largest overlap of clusters is:
+# -Cluster 1 from the Network and cluster 1 from the URF-Hierarchical clustering
+# -Cluster 2 from the Network and cluster 3 from the URF-Hierarchical clustering
+# -Cluster 3 from the Network and cluster 2 from the URF-Hierarchical clustering
+
+# All other combinations will thus be set to be "Other" for the visualization:
 plotPCA_scores$combined[!(plotPCA_scores$combined%in% c("1/1", "2/3", "3/2"))] <- "Other"
 
 
 # Get PCA projections of beneign samples:
 
-# 1) Scale beneign samples using the maligannt samples
+# 1) Get beneign samples
 dataMatrix_beneign <- dataMatrix_filtered[!(rownames(dataMatrix_filtered) %in% rownames(dataMatrix_malignant)),]
+
+# 2) Scale beneign samples using the malignant samples
 beneign_scaled <-  t((t(dataMatrix_beneign) - rowMeans(t(dataMatrix_malignant)))/(apply(t(dataMatrix_malignant),1,sd)))
 
-# 2) Caluclate the projections
+# 3) Calculate the projections
 projectBeneign <- as.data.frame(as.matrix(beneign_scaled) %*% as.matrix(pcaList$rotation))
 projectBeneign$ID <- rownames(projectBeneign)
 projectBeneign$combined <- rep("Beneign", nrow(projectBeneign))
@@ -458,7 +465,7 @@ ggsave("PCAplot2.png",
 
 
 #******************************************************************************#
-# Important variables for clustering
+# Find the important variables for the cluster definitions
 #******************************************************************************#
 
 # Get data from malignant samples
@@ -482,9 +489,9 @@ plotBeneign$combined <- rep("Beneign", nrow(plotBeneign))
 # combine malignant and beneign samples
 plotAll <- rbind.data.frame(plotMalignant, plotBeneign)
 
-# In the loading plot, we saw that Mean Compactness and Mean Area might be able
-# to distinguish between the clusters. So, let;s make a scatter plot using these
-# two variables
+# In the loading plot (PCAplot2.png), we saw that Mean Compactness and Mean Area 
+# might be able to distinguish between the clusters. So, let;s make a scatter 
+# plot using these two variables
 scatterPlot <- ggplot() +
   geom_point(data = plotAll[plotAll$combined == "Beneign",], aes(x = exp(area_mean)-0.5, y = exp(compactness_mean)-0.5,  color = "Beneign"), size = 2, alpha = 0.7) +
   geom_point(data = plotAll[plotAll$combined != "Beneign",], aes(x = exp(area_mean)-0.5, y = exp(compactness_mean)-0.5, color = combined), size = 3, alpha = 1) +
@@ -552,22 +559,25 @@ ggsave("clusterEvaluation.png",
 classificationFolder <- paste0(homeDir, "/Classification/")
 
 # Load data
-load(paste0(classificationFolder,"trainingData.RData"))
+load(paste0(classificationFolder,"trainingData_filtered.RData"))
 load(paste0(classificationFolder, "finalModel.RData"))
 load(paste0(classificationFolder, "modelInfo.RData"))
-
-# Prepare training data: scaling, removing unnecessary features
-trainingData_scaled <- t((t(trainingData) - rowMeans(t(trainingData)))/(apply(t(trainingData),1,sd)))
-excludedFeatures <- modelInfo$removedFeature[1:(30 - 4)]
-trainingData_filtered <- trainingData_scaled[,!(colnames(trainingData_scaled) %in% excludedFeatures)]
 
 # Get class probabilities of training data using the EN model
 prob <- as.data.frame(predict(finalModel, trainingData_filtered, type = "response"))
 
-# Prepare class probability data frame
+# Prepare class probability data frame:
+
+# Add sample IDs
 prob$ID <- rownames(prob)
+
+# Combine with class labels
 prob <- inner_join(prob, sampleInfo_filtered, by = c("ID" = "id"))
+
+# Select malignant samples only
 prob_malignant <- prob[prob$diagnosis == "Malignant",]
+
+# Add cluster information
 prob_malignant <- inner_join(prob_malignant, clusterDF, by = c("ID" = "ID"))
 prob_malignant$combined <- paste0(prob_malignant$Cluster_Network, "/", prob_malignant$Cluster_rf)
 prob_malignant$combined[!(prob_malignant$combined%in% c("1/1", "2/3", "3/2"))] <- "Other"
@@ -592,3 +602,12 @@ ClusterProbabilities <- ggplot() +
 ggsave(ClusterProbabilities, file = "ClusterProbabilities.png", width = 10, height = 8)
 
 
+# As we already saw in the PCA plot and scatter plot. The red cluster encompasses
+# more extreme malignant samples that can easily be distiguished from the beneign
+# samples. In contrast, the red and the green clusters are more closely related
+# to the beneign samples and are thus more difficult to predict.
+################################################################################
+
+# End of the script
+
+################################################################################

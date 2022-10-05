@@ -629,3 +629,8 @@ sampleInfo_filtered <- sampleInfo[sampleInfo$id %in% rownames(dataMatrix_filtere
 save(sampleInfo_filtered, file = "sampleInfo_filtered.RData")
 
 
+################################################################################
+
+# End of the script
+
+################################################################################

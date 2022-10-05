@@ -9,3 +9,6 @@
 
 # Ignore RData files
 *.RData
+
+# Ignore RHistory files
+*.Rhistory

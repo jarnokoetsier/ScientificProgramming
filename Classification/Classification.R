@@ -27,8 +27,8 @@ CRANpackages <- c("tidyverse",     # Data formatting and plotting
                   "gridExtra",     # Combine images in single plot
                   "grid",          # Add elements to the combined image
                   "UBL",           # Adasyn algorithm for class imbalance
-                  "foreach",
-                  "doParallel")
+                  "foreach",       # Needed for parallel computing
+                  "doParallel")    # Needed for parallel computing
 
 
 # Install (if not yet installed) and load the required CRAN packages: 
@@ -217,14 +217,18 @@ bestAlpha <- rep(NA, (ncol(trainingData_scaled)-1))
 bestLambda <- rep(NA, (ncol(trainingData_scaled)-1))
 removedFeature <- rep(NA, (ncol(trainingData_scaled)-1))
 
+# Number of cores used for the parallelization
+nCores <- detectCores()
+
 # Train model using all features
-#set.seed(123)
 testModel <- logisticRegression_par(trainingData = trainingData_scaled,
                                 trainingClass = trainingClass,
                                 nfold = nrep,
                                 nrep = nfold,
                                 alpha = alpha,
-                                lambda = lambda)
+                                lambda = lambda,
+                                nCores = nCores,
+                                seed = 123)
 
 
 # The best parameter combination (alpha & lambda) for which the mean accuracy is the highest:
@@ -261,7 +265,9 @@ for (q in 1:(ncol(trainingData_scaled)-2)) {
                                   nfold = nrep,
                                   nrep = nfold,
                                   alpha = alpha,
-                                  lambda = lambda)
+                                  lambda = lambda,
+                                  nCores = nCores,
+                                  seed = 123)
   
   # The best parameter combination (alpha & lambda) for which the mean accuracy is the highest:
   bestParameters <-  which.max(sapply(testModel, function(x){mean(x$Accuracy)}))
@@ -278,6 +284,8 @@ for (q in 1:(ncol(trainingData_scaled)-2)) {
   
 }
 end_time <- Sys.time()
+
+# Determine the time that was needed for the recursive feature illumination
 end_time - start_time
 
 # Combine values into a single list object
@@ -353,18 +361,21 @@ trainingData_filtered <- trainingData_scaled[,!(colnames(trainingData_scaled) %i
 save(trainingData_filtered, file = "trainingData_filtered.RData")
 
 # Train model
-set.seed(123)
 testModel <- logisticRegression_par(trainingData = trainingData_filtered,
                                 trainingClass = trainingClass,
                                 nfold = 5,
                                 nrep = 10,
                                 alpha = modelInfo$bestAlpha[31-n_features],
-                                lambda = modelInfo$bestLambda[31-n_features])
+                                lambda = modelInfo$bestLambda[31-n_features],
+                                nCores = nCores,
+                                seed = 123)
 
 # Get coefficients in the repeated CV
 coeffs <- as.data.frame(t(testModel[[1]]$Coefficients))
 colnames(coeffs) <- colnames(trainingData_filtered)
 coeffPlot <- gather(coeffs)
+
+# Combine coefficients with the feature information object
 coeffPlot <- inner_join(coeffPlot, featureInfo, by = c("key" = "Name"))
 
 # Construct final model
@@ -503,5 +514,8 @@ ggsave("probabilityPlot.png",
 
 
 
+################################################################################
 
+# End of the script
 
+################################################################################
