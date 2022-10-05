@@ -9,31 +9,36 @@ ui <- fluidPage(
     sidebarPanel(
       
       #Title
-      h2(strong("Predict")),
+      h2(strong("Class Prediction")),
       
       hr(),
-      
+      actionBttn(inputId = "example", 
+                 label = "Example",
+                 style = "simple",
+                 color = "success"),
 
+      br(),
+      br(),
       
       # Perimeter Worst
       numericInput(inputId = "PerimeterWorst", 
                 label = "Perimeter Worst", 
-                value = 1),
+                value = NULL),
       
       # Radius Worst
       numericInput(inputId = "RadiusWorst", 
-                   label = "Texture Worst", 
-                   value = 1),
+                   label = "Radius Worst", 
+                   value = NULL),
       
-      # Smoothness Worst
-      numericInput(inputId = "SmoothnessWorst", 
-                   label = "Texture Worst", 
-                   value = 1),
+      # Mean Concave Points
+      numericInput(inputId = "ConcavePointsMean", 
+                   label = "Mean Concave Points", 
+                   value = NULL),
       
       # Texture Worst
       numericInput(inputId = "TextureWorst", 
                    label = "Texture Worst", 
-                   value = 1),
+                   value = NULL),
       
       # Predict
       hr(),
@@ -42,6 +47,7 @@ ui <- fluidPage(
                  style = "simple",
                  color = "primary",
                  icon = icon("sync"))
+
       
       
     ), #End Sidebar panel
@@ -60,11 +66,28 @@ ui <- fluidPage(
       tabsetPanel(
         
         #Gene expression tab
-        tabPanel("Class Probability"
+        tabPanel("Class Probability", value = "probs",
+                 plotlyOutput("ProbPlot",
+                            width = "1000px", 
+                            height="600px")%>% 
+                   withSpinner(color="#FFFFFF"),
+                 
+                verbatimTextOutput("prob_text"),
+                 
+                 tags$head(tags$style("#prob_text{color: black;
+                                 font-size: 20px;
+                                 font-style: bold;
+                                 }"
+                 )
+                 )
                  ),
         
         #Peptide expression tab
-        tabPanel("PCA",       
+        tabPanel("PCA", value = "pca",
+                 plotlyOutput("PCAplot",
+                              width = "1000px", 
+                              height="600px")%>% 
+                   withSpinner(color="#FFFFFF")
                  ),
         
         #Peptide expression tab

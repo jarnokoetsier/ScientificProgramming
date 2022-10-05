@@ -3,7 +3,9 @@ CRANpackages <- c("tidyverse",
                   "shinyWidgets",
                   "shinycssloaders",
                   "shinythemes",
-                  "caret")
+                  "caret",
+                  "glmnet",
+                  "plotly")
 
 #Install (if not yet installed) and load the required packages: 
 for (pkg in CRANpackages) {
@@ -18,3 +20,5 @@ load(paste0(homeDir, "/Classification/trainingData_filtered.RData"))
 load(paste0(homeDir, "/Classification/trainingData.RData"))
 load(paste0(homeDir, "/Classification/trainingClass.RData"))
 load(paste0(homeDir, "/Classification/finalModel.RData"))
+load(paste0(homeDir, "/Pre-Processing/sampleInfo_filtered.RData"))
+load(paste0(homeDir, "/Pre-Processing/featureInfo.RData"))
