@@ -27,9 +27,10 @@ Before analysing the data, be aware of the following:
 
 1. Put the data file (Data.xlsx) into the main folder (..PATH../ScientificProgramming/).
 2. Furthermore, it is important to run the scripts in the following order:
-  * Pre-processing
-  * Classification
-  * Clustering
+    * Pre-processing
+    * Classification
+    * Clustering
+    * App
 3. Finally, please follow the instructions in the scripts carefully to ensure a successfull analysis.
 
 
