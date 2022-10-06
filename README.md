@@ -10,13 +10,13 @@ The data set consist of 569 samples and includes the sample ID, the sample diagn
 3. **Perimeter:** The total length of the border of the cell nucleus.
 4. **Area:** The size of the surface of the cell nucleus.
 5. **Smoothness:** The local variation in radius lengths.
-6. **Compactness:** Perimeter<sub>^2</sub> / Area - 1.0
+6. **Compactness:** Perimeter<sup>2</su> / Area - 1.0
 7. **Concavity:** The severity of concave portions of the contour of the cell nucleus.
 8. **Concave points:** The number of concave portions of the contour of the cell nucleus.
 9. **Symmetry:** Similarity of the radius length on both sides of the diameter.
 10. **Fractal dimension:** "coastline approximation" - 1
 
-More information about the variables can be found on page 8 in this [paper](https://www.math.vu.nl/~sbhulai/papers/paper-westerdijk.pdf) by Westerdijk.
+More information about the variables can be found on page 8 in this [paper by Westerdijk (2018)](https://www.math.vu.nl/~sbhulai/papers/paper-westerdijk.pdf).
 
 ## Research aim
 The aim of the analysis is three-fold:
