@@ -1,7 +1,11 @@
 # Scientific Programming Project (MSB1015)
 For the Scientific Programming (MSB1015) course, the *Breast Cancer Wisconsin (Diagnostic) Data Set* was analysed. This repository contains all the scripts used for this analysis.
-[Data](#Data)
-[Research aim](#Research-aim)
+
+1. [Data](#Data)
+2. [Research aim](#Research-aim)
+3. [Analysing the data](#Analysing-the-data)
+4. [App](#App)
+
 ## Data
 The original Breast Cancer Wisconsin (Diagnostic) Data Set can be downloaded from [Kaggle](https://www.kaggle.com/datasets/uciml/breast-cancer-wisconsin-data). However, for the current analysis a modified version of this data set was used.
 
