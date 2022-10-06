@@ -57,6 +57,6 @@ library(shiny)
 # Run the shiny app
 runApp(..PATH../ScientificProgramming/App)
 ```
- <font size="10"> **Now you can use the classification model to predict the class of new samples!** </font>
+ <font size="100"> **Now you can use the classification model to predict the class of new samples!** </font>
  
 ![App Demo](/Figures/AppDemo.gif?raw=true "App Demo")
