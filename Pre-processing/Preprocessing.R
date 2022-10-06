@@ -20,27 +20,54 @@ rm(list = ls())
 # Set path to the project folder
 homeDir <- "C:/Users/Gebruiker/Documents/GitHub/ScientificProgramming"
 
+# Set working directory to the pre-processing folder
+setwd(paste0(homeDir, "/Pre-processing"))
+
+
+# Install (if needed) and load "devtools" package
+# This package is needed to install the correct versions of the packages
+if (!requireNamespace("devtools", quietly = TRUE))
+  install.packages("devtools", ask = FALSE)
+require(as.character("devtools"), character.only = TRUE)
+
+
 # Required packages
 CRANpackages <- c("tidyverse",     # Data formatting and plotting
                   "readxl",        # Read excel files
-                  "tidyverse",     # Data formatting and plotting
                   "caret",         # Needed for imputation
                   "ggridges",      # Create ridge plot
                   "isotree",       # Isolation forest
                   "gridExtra",     # Combine multiple plots into single image
                   "grid",          # Add objects to combined plots
-                  "ggrepel")       # Add labels in plot        
+                  "ggrepel")       # Add labels in plot 
 
-# Install (if not yet installed) and load the required CRAN packages: 
-for (pkg in CRANpackages) {
-  if (!requireNamespace(pkg, quietly = TRUE))
-    install.packages(pkg, ask = FALSE)
-  require(as.character(pkg), character.only = TRUE)
+# Versions of required packages
+versions <- c("1.3.2",
+              "1.4.1",
+              "6.0.93",
+              "0.5.4",
+              "0.5.17",
+              "2.3",
+              "4.2.1",
+              "0.9.1")
+
+
+# Install (if not yet installed) and load the required CRAN packages:
+for (pkg in 1:length(CRANpackages)) {
+  
+  # Install package if not installed yet
+  if (!requireNamespace(CRANpackages[pkg], quietly = TRUE)){
+    install_version(CRANpackages[pkg], version = versions[pkg], 
+                    repos = "http://cran.us.r-project.org")
+  }
+  # Install package if correct version is not installed yet
+  if (packageVersion(CRANpackages[pkg]) != versions[pkg]){
+    install_version(CRANpackages[pkg], version = versions[pkg], 
+                    repos = "http://cran.us.r-project.org")
+  }
+  # Load package
+  require(as.character(CRANpackages[pkg]), character.only = TRUE)
 }
-
-# Set working directory to the pre-processing folder
-setwd(paste0(homeDir, "/Pre-processing"))
-
 
 ################################################################################
 

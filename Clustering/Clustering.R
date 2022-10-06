@@ -17,29 +17,55 @@ rm(list = ls())
 
 # Set working directory
 homeDir <- "C:/Users/Gebruiker/Documents/GitHub/ScientificProgramming"
+
+# Set working directory to the clustering folder
 setwd(paste0(homeDir, "/Clustering"))
 
 # Install and load required packages
-CRANpackages <- c("tidyverse",    
-                  "corrr",
-                  "igraph",
-                  'ggraph',
-                  "RColorBrewer",
-                  "randomForest",
-                  "cluster",
-                  "tidyverse",
-                  "heatmaply",
-                  "gridExtra",
-                  "grid",
-                  "ggrepel",
-                  "caret",
-                  "glmnet")
+CRANpackages <- c("tidyverse",       # Data formatting and plotting
+                  "corrr",           # Calculate pairwise correlations
+                  "igraph",          # Network-based clustering
+                  'ggraph',          # Network and dendrogram visualizations
+                  "RColorBrewer",    # Make color palettes 
+                  "randomForest",    # Unsupervised random forest
+                  #"cluster",
+                  "heatmaply",       # Make heatmaps
+                  "gridExtra",       # Combine images in single plot
+                  "grid",            # Add elements to the combined image
+                  "ggrepel",         # Add labels in plot
+                  "caret",           # Create machine learning workflow
+                  "glmnet")          # Construct elastic net model
 
-# Install (if not yet installed) and load the required CRAN packages: 
-for (pkg in CRANpackages) {
-  if (!requireNamespace(pkg, quietly = TRUE))
-    install.packages(pkg, ask = FALSE)
-  require(as.character(pkg), character.only = TRUE)
+# Versions of required packages
+versions <- c("1.3.2",
+              "0.4.4",
+              "1.3.4",
+              "2.0.6",
+              "1.1.3",
+              "4.7.1.1",
+              #"2.1.3",
+              "1.3.0",
+              "2.3",
+              "4.2.1",
+              "0.9.1",
+              "6.0.93",
+              "4.1.4")
+
+# Install (if not yet installed) and load the required CRAN packages:
+for (pkg in 1:length(CRANpackages)) {
+  
+  # Install package if not installed yet
+  if (!requireNamespace(CRANpackages[pkg], quietly = TRUE)){
+    install_version(CRANpackages[pkg], version = versions[pkg], 
+                    repos = "http://cran.us.r-project.org")
+  }
+  # Install package if correct version is not installed yet
+  if (packageVersion(CRANpackages[pkg]) != versions[pkg]){
+    install_version(CRANpackages[pkg], version = versions[pkg], 
+                    repos = "http://cran.us.r-project.org")
+  }
+  # Load package
+  require(as.character(CRANpackages[pkg]), character.only = TRUE)
 }
 
 # Load data
