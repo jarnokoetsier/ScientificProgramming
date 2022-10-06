@@ -38,6 +38,7 @@ Before analysing the data, be aware of the following:
 
 ## App
 To run the app in RStudio, click on "Run App" in the top right corner when having either the ui.R, server.R, or global.R file open in the RStudio window.
+![Alt text](/Figures/StartApp.JPG?raw=true "Start App")
 
 If this is not possible, run the following commands:
 
