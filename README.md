@@ -1,5 +1,5 @@
 # Scientific Programming Project (MSB1015)
-For the Scientific Programming (MSB1015) course, an adjusted version *Breast Cancer Wisconsin (Diagnostic) Data Set* was analysed. This repository contains all the scripts that were used for this analysis.
+For the Scientific Programming (MSB1015) course, an adjusted version of the *Breast Cancer Wisconsin (Diagnostic) Data Set* was analysed. This repository contains all the scripts that were used for this analysis.
 
 1. [Data](#Data)
 2. [Research aim](#Research-aim)
