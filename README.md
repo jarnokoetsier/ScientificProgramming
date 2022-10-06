@@ -8,9 +8,10 @@ For the Scientific Programming (MSB1015) course, an adjusted version of the *Bre
 2. [Research aim](#Research-aim)
 3. [Analysing the data](#Analysing-the-data)
 4. [App](#App)
+5. [Contact](#Contact)
 
 ## Data
-The original Breast Cancer Wisconsin (Diagnostic) Data Set can be downloaded from [Kaggle](https://www.kaggle.com/datasets/uciml/breast-cancer-wisconsin-data). However, for the current analysis a modified version of this data set was used.
+The original Breast Cancer Wisconsin (Diagnostic) Data Set can be downloaded from [Kaggle](https://www.kaggle.com/datasets/uciml/breast-cancer-wisconsin-data). However, for the current analysis a modified version of this data set was used. [Contact me](#Contact) to access the adjusted data set.
 
 The data set consist of 569 samples and includes the sample ID, the sample diagnosis (M: Malignant; B: Beneign), as well as 30 variables computed from a digitized image of a fine needle aspirate (FNA) of a breast mass. These 30 variables describe features from the cell nuclei in these images and encompasses the **mean**, standard error (**SE**), and the mean of the three largest values (**worst**) of the following 10 characteristics:
 1. **Radius:** The mean of distances from center to points on the border of the cell nucleus.
@@ -63,3 +64,7 @@ runApp(..PATH../ScientificProgramming/App)
  ### Now you can use the classification model to predict the class of new samples!
  
 ![App Demo](/Figures/AppDemo.gif?raw=true "App Demo")
+
+
+## Contact
+Feel free to contact me via email: j.koetsier@student.maastrichtuniversity.nl
