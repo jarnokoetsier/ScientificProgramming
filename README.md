@@ -46,17 +46,13 @@ To run the app in RStudio, click on "Run App" in the top right corner when havin
 ![Alt text](/Figures/StartApp.JPG?raw=true "Start App")
 
 If this is not possible, run the following commands:
-
-`install.packages("shiny")`
-
-`library(shiny)`
-
-`runApp(..PATH../ScientificProgramming/App)`
-
 ```r
+# Install the shiny package
 install.packages("shiny")
 
+# Load the shiny package
 library(shiny)
 
+# Run the shiny app
 runApp(..PATH../ScientificProgramming/App)
 ```
