@@ -2,7 +2,7 @@
 server <- function(input, output, session) {
   
   #******************************************************************************#
-  # 1) Prepatation
+  # 1) Preparation
   #******************************************************************************#
   
   #Example
@@ -14,7 +14,7 @@ server <- function(input, output, session) {
     # Select random sample from example data
     r <- sample(1:nrow(exampleData),1)
     
-    # Updata numeric input
+    # Update numeric input
     updateNumericInput(session, "PerimeterWorst",
                     label = NULL,
                     value = round(exp(exampleData$perimeter_worst[r])-0.5,2))
