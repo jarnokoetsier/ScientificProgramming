@@ -5,16 +5,18 @@ For the Scientific Programming (MSB1015) course, the *Breast Cancer Wisconsin (D
 The original Breast Cancer Wisconsin (Diagnostic) Data Set can be downloaded from [Kaggle](https://www.kaggle.com/datasets/uciml/breast-cancer-wisconsin-data). However, for the current analysis a modified version of this data set was used.
 
 The data set consist of 569 samples and includes the sample ID, the sample diagnosis (M: Malignant; B: Beneign), as well as 30 variables computed from a digitized image of a fine needle aspirate (FNA) of a breast mass. These 30 variables describe features from the cell nuclei in these images and encompasses the **mean**, standard error (**SE**), and the mean of the three largest values (**worst**) of the following 10 characteristics:
-1. **Radius:** mean of distances from center to points on the perimeter
-2. **Texture:** standard deviation of gray-scale values
-3. **Perimeter**
-4. **Area**
-5. **Smoothness:** local variation in radius lengths
-6. **Compactness:** Perimeter^2 / Area - 1.0
-7. **Concavity:** Severity of concave portions of the contour
-8. **Concave points:** number of concave portions of the contour
-9. **Symmetry**
+1. **Radius:** The mean of distances from center to points on the border of the cell nucleus.
+2. **Texture:** The standard deviation of gray-scale values of the digitalized image.
+3. **Perimeter:** The total length of the border of the cell nucleus.
+4. **Area:** The size of the surface of the cell nucleus.
+5. **Smoothness:** The local variation in radius lengths.
+6. **Compactness:** Perimeter<sub>^2</sub> / Area - 1.0
+7. **Concavity:** The severity of concave portions of the contour of the cell nucleus.
+8. **Concave points:** The number of concave portions of the contour of the cell nucleus.
+9. **Symmetry:** Similarity of the radius length on both sides of the diameter.
 10. **Fractal dimension:** "coastline approximation" - 1
+
+More information about the variables can be found on page 8 in this [paper](https://www.math.vu.nl/~sbhulai/papers/paper-westerdijk.pdf) by Westerdijk.
 
 ## Research aim
 The aim of the analysis is three-fold:
