@@ -15,7 +15,8 @@ ui <- fluidPage(
       actionBttn(inputId = "example", 
                  label = "Example",
                  style = "simple",
-                 color = "success"),
+                 color = "success",
+                 icon("fa-solid fa-rotate", verify_fa = FALSE)),
 
       br(),
       br(),
@@ -46,7 +47,7 @@ ui <- fluidPage(
                  label = "Predict",
                  style = "simple",
                  color = "primary",
-                 icon = icon("sync"))
+                 icon("fa-solid fa-play", verify_fa = FALSE))
 
       
       
@@ -65,7 +66,7 @@ ui <- fluidPage(
       #Tabs
       tabsetPanel(
         
-        #Gene expression tab
+        #Class probability tab
         tabPanel("Class Probability", value = "probs",
                  plotlyOutput("ProbPlot",
                             width = "1000px", 
@@ -82,7 +83,7 @@ ui <- fluidPage(
                  )
                  ),
         
-        #Peptide expression tab
+        #PCA tab
         tabPanel("PCA", value = "pca",
                  plotlyOutput("PCAplot",
                               width = "1000px", 
@@ -90,11 +91,44 @@ ui <- fluidPage(
                    withSpinner(color="#FFFFFF")
                  ),
         
-        #Peptide expression tab
+        #Scatter plot tab
         tabPanel("Scatter Plot", 
+                 br(),
+                 fluidRow(
+                   column(width = 3,
+                          selectInput(inputId = "Xaxis", 
+                                      label = tags$span(style="color: white;","x-axis"),
+                                      choices = c("Perimeter Worst",
+                                                  "Radius Worst",
+                                                  "Texture Worst",
+                                                  "Mean Concave Points"
+                                      ),
+                                      selected = "Perimeter Worst",
+                                      multiple = FALSE)
+                          ),
+                   column(width = 3,
+                          selectInput(inputId = "Yaxis", 
+                                      label = tags$span(style="color: white;","y-axis"),
+                                      choices = c("Perimeter Worst",
+                                                  "Radius Worst",
+                                                  "Texture Worst",
+                                                  "Mean Concave Points"
+                                      ),
+                                      selected = "Texture Worst",
+                                      multiple = FALSE),
+                     )
+                 ),
+                 
+                 hr(),
+
+                 plotlyOutput("scatter",
+                              width = "1000px", 
+                              height="600px")%>% 
+                   withSpinner(color="#FFFFFF")
+                 
                  ),
         
-        #correlation tab
+        #Histogram tab
         tabPanel("Histogram",
                  )
         

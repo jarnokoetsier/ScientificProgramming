@@ -1,20 +1,32 @@
 #Server
 server <- function(input, output, session) {
+  
+  #******************************************************************************#
+  # 1) Prepatation
+  #******************************************************************************#
+  
   #Example
   observeEvent(input$example, {
     
+    # Get example data from test data
+    exampleData <- testData[,colnames(testData) %in% colnames(trainingData_filtered)]
+    
+    # Select random sample from example data
+    r <- sample(1:nrow(exampleData),1)
+    
+    # Updata numeric input
     updateNumericInput(session, "PerimeterWorst",
                     label = NULL,
-                    value = round(exp(4.42),2))
+                    value = round(exp(exampleData$perimeter_worst[r])-0.5,2))
     updateNumericInput(session, "RadiusWorst",
                        label = NULL,
-                       value = round(exp(2.6),2))
+                       value = round(exp(exampleData$radius_worst[r])-0.5,2))
     updateNumericInput(session, "ConcavePointsMean",
                        label = NULL,
-                       value = round(exp(-0.671),2))
+                       value = round(exp(exampleData$concave_points_mean[r])-0.5,2))
     updateNumericInput(session, "TextureWorst",
                        label = NULL,
-                       value = round(exp(3.27),2))
+                       value = round(exp(exampleData$texture_worst[r])-0.5,2))
 
   })
   
@@ -48,6 +60,10 @@ server <- function(input, output, session) {
     return(values_scaled)
   })
   
+  #******************************************************************************#
+  # 2) Probability plot
+  #******************************************************************************#
+  
   #Predict
   prob <- eventReactive(input$Predict,{
     
@@ -61,7 +77,7 @@ server <- function(input, output, session) {
     return(prob)
   })
  
-  
+  # Render probability plot
   output$ProbPlot <- renderPlotly({
     req(prob())
     prob <- prob()
@@ -97,10 +113,7 @@ server <- function(input, output, session) {
             panel.border = element_blank(),
             axis.text = element_text(colour = "white", size = 10),
             axis.line=element_line(colour="white"),
-            #axis.line.y.left = element_line(color="white"),
             axis.title = element_text(colour = "white"),
-            #axis.ticks.x=element_blank(), 
-            #axis.ticks.y=element_blank(),
             panel.grid.major = element_blank(),
             panel.grid.minor = element_blank(),
             panel.background = element_rect(fill = "#343434", color = "#343434"),
@@ -127,6 +140,10 @@ server <- function(input, output, session) {
     return(txt)
   })
 
+  #******************************************************************************#
+  # 3) PCA
+  #******************************************************************************#
+  
   # Make PCA model
   pcaList <- eventReactive(input$Predict, {
     pcaList <-  prcomp(trainingData_filtered,        
@@ -135,10 +152,14 @@ server <- function(input, output, session) {
                        scale = FALSE)
   })
   
+  # Render PCA plot
   output$PCAplot <- renderPlotly({
+    
+    # Require input values
     req(inputValues())
     inputValues <- inputValues()
     
+    # Require PCA object
     req(pcaList())
     pcaList <- pcaList()
     
@@ -154,7 +175,7 @@ server <- function(input, output, session) {
     scores_proj <- as.data.frame(t(as.matrix(inputValues)) %*% as.matrix(pcaList$rotation))
     scores_proj$ID <- rownames(scores_proj)
     
-    # Make plot
+    # Make PCA plot
     PCAtrain <- ggplot()+
       geom_point(data = scores_train, aes(x = PC1, y = PC2, shape = diagnosis, color = diagnosis), size = 2, alpha = 0.7) +
       geom_point(data = scores_proj, aes(x = PC1, y = PC2), color = "red", size = 3, alpha = 1) +
@@ -179,10 +200,7 @@ server <- function(input, output, session) {
             panel.border = element_blank(),
             axis.text = element_text(colour = "white", size = 10),
             axis.line=element_line(colour="white"),
-            #axis.line.y.left = element_line(color="white"),
             axis.title = element_text(colour = "white"),
-            #axis.ticks.x=element_blank(), 
-            #axis.ticks.y=element_blank(),
             panel.grid.major = element_blank(),
             panel.grid.minor = element_blank(),
             panel.background = element_rect(fill = "#343434", color = "#343434"),
@@ -194,6 +212,101 @@ server <- function(input, output, session) {
     
     return(ggplotly(PCAtrain, tooltip = c("x", "y")))
   })
+  
+  #******************************************************************************#
+  # 4) Scatter plot
+  #******************************************************************************#
+
+  Xaxis <- eventReactive(input$Predict,{
+    req(input$Xaxis)
+    Xaxis <- input$Xaxis
+    return(Xaxis)
+  })
+  
+  Yaxis <- eventReactive(input$Predict,{
+    req(input$Yaxis)
+    Yaxis <- input$Yaxis
+    return(Yaxis)
+  })
+  
+  observedValue <- eventReactive(input$Predict,{
+    observedValue <- as.data.frame(t(as.data.frame(c(input$ConcavePointsMean, 
+                                    input$RadiusWorst, 
+                                    input$TextureWorst, 
+                                    input$PerimeterWorst))))
+    
+    return(observedValue)
+    
+  })
+   
+   output$scatter <- renderPlotly({
+     req(Xaxis())
+     req(Yaxis())
+     req(observedValue())
+     
+     # Get training data
+     plotData <- trainingData[, colnames(trainingData) %in% colnames(trainingData_filtered)]
+     
+     # Reverse the log transformation
+     plotData <- exp(plotData) - 0.5
+     
+     # Add ID and diagnosis to data
+     plotData$ID <- rownames(plotData)
+     plotData <- inner_join(plotData, sampleInfo_filtered, by = c("ID" = "id"))
+     
+     
+     # get selected feature
+     features <- c("Mean Concave Points",
+                   "Radius Worst",
+                   "Texture Worst",
+                   "Perimeter Worst")
+     
+     f1 <- which(features == Xaxis())
+     f2 <- which(features == Yaxis())
+     
+     # Observed value
+     observedValue <- observedValue()
+     colnames(observedValue) <-colnames(plotData)[1:4]
+     
+     scatter <- ggplot()+
+       geom_point(aes(x = plotData[,f1], y = plotData[,f2], shape = plotData$diagnosis, color = plotData$diagnosis), size = 2, alpha = 0.7) +
+       geom_point(aes(x = observedValue[,f1], y = observedValue[,f2]), color = "red", size = 3, alpha = 1) +
+       geom_text(aes(x = observedValue[,f1], y = observedValue[,f2]), label = "Observation", color = "white", size = 3.5) +
+       scale_shape_manual(values = c(15,17,0,2)) +
+       xlab(features[f1]) +
+       ylab(features[f2]) +
+       labs(title = NULL,
+            color = "Diagnosis",
+            shape = "") +
+       theme_classic() +
+       theme(plot.title = element_text(hjust = 0.5,
+                                       face = "bold",
+                                       size = 16,
+                                       colour = "white"),
+             plot.subtitle = element_text(hjust = 0.5,
+                                          size = 10,
+                                          color = "white"),
+             legend.position = "bottom",
+             legend.title = element_blank(),
+             panel.border = element_blank(),
+             axis.text = element_text(colour = "white", size = 10),
+             axis.line=element_line(colour="white"),
+             axis.title = element_text(colour = "white"),
+             panel.grid.major = element_blank(),
+             panel.grid.minor = element_blank(),
+             panel.background = element_rect(fill = "#343434", color = "#343434"),
+             plot.background = element_rect(fill = "#343434"),
+             legend.background = element_rect(color = "#343434", fill = "#343434"),
+             legend.text = element_text(colour = "white"),
+       )+
+       scale_color_manual(values = c("#7EC8E3", "#E12A36"))
+     
+     return(ggplotly(scatter, tooltip = c("x", "y")))
+
+   })
+   
+
+ 
   
   
 }
