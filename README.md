@@ -42,7 +42,7 @@ Before analysing the data, be aware of the following:
 
 
 ## App
-![Alt text](/Figures/AppDemo.gifraw=true "App Demo")
+![](/Figures/AppDemo.gifraw=true "App Demo")
 
 To run the app in RStudio, click on "Run App" in the top right corner when having either the `App/ui.R`, `App/server.R`, or `App/global.R` file open in the RStudio window.
 
