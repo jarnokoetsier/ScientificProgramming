@@ -1,5 +1,10 @@
 # Scientific Programming Project (MSB1015)
-For the Scientific Programming (MSB1015) course, the *Breast Cancer Wisconsin (Diagnostic) Data Set* was analysed. This repository contains all the scripts used for this analysis.
+For the Scientific Programming (MSB1015) course, an adjusted version *Breast Cancer Wisconsin (Diagnostic) Data Set* was analysed. This repository contains all the scripts that were used for this analysis.
+
+1. [Data](#Data)
+2. [Research aim](#Research-aim)
+3. [Analysing the data](#Analysing-the-data)
+4. [App](#App)
 
 ## Data
 The original Breast Cancer Wisconsin (Diagnostic) Data Set can be downloaded from [Kaggle](https://www.kaggle.com/datasets/uciml/breast-cancer-wisconsin-data). However, for the current analysis a modified version of this data set was used.
@@ -27,23 +32,28 @@ The aim of the analysis is three-fold:
 ## Analysing the data
 Before analysing the data, be aware of the following:
 
-1. Put the data file (Data.xlsx) into the main folder (..PATH../ScientificProgramming/).
+1. Put the data file (`Data.xlsx`) into the main folder (`..PATH../ScientificProgramming/`).
 2. Furthermore, it is important to run the scripts in the following order:
-    * Pre-processing
-    * Classification
-    * Clustering
-    * App
+    * `Pre-processing/Preprocessing.R`
+    * `Classification/Classification.R`
+    * `Clustering/Clustering.R`
+    * [App](#App)
 3. Finally, please follow the instructions in the scripts carefully to ensure a successfull analysis.
 
 
 ## App
-To run the app in RStudio, click on "Run App" in the top right corner when having either the ui.R, server.R, or global.R file open in the RStudio window.
+To run the app in RStudio, click on "Run App" in the top right corner when having either the `ui.R`, `server.R`, or `global.R` file open in the RStudio window.
+
+![Alt text](/Figures/StartApp.JPG?raw=true "Start App")
 
 If this is not possible, run the following commands:
+```r
+# Install the shiny package
+install.packages("shiny")
 
-`install.packages("shiny")`
+# Load the shiny package
+library(shiny)
 
-`library(shiny)`
-
-`runApp(..PATH../ScientificProgramming/App)`
-
+# Run the shiny app
+runApp(..PATH../ScientificProgramming/App)
+```
