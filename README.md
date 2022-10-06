@@ -37,7 +37,7 @@ Before analysing the data, be aware of the following:
     * `Pre-processing/Preprocessing.R`
     * `Classification/Classification.R`
     * `Clustering/Clustering.R`
-    * `App/server.R`, `App/ui.R`, `App/global.R`
+    * [App](#App)
 3. Finally, please follow the instructions in the scripts carefully to ensure a successfull analysis.
 
 
