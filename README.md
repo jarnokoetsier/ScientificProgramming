@@ -34,15 +34,15 @@ Before analysing the data, be aware of the following:
 
 1. Put the data file (Data.xlsx) into the main folder (..PATH../ScientificProgramming/).
 2. Furthermore, it is important to run the scripts in the following order:
-    * Pre-processing
-    * Classification
-    * Clustering
-    * App
+    * `Pre-processing/Preprocessing.R`
+    * `Classification/Classification.R`
+    * `Clustering/Clustering.R`
+    * `App/server.R`, `App/ui.R`, `App/global.R`
 3. Finally, please follow the instructions in the scripts carefully to ensure a successfull analysis.
 
 
 ## App
-To run the app in RStudio, click on "Run App" in the top right corner when having either the ui.R, server.R, or global.R file open in the RStudio window.
+To run the app in RStudio, click on "Run App" in the top right corner when having either the `ui.R`, `server.R`, or `global.R` file open in the RStudio window.
 ![Alt text](/Figures/StartApp.JPG?raw=true "Start App")
 
 If this is not possible, run the following commands:
