@@ -130,6 +130,24 @@ ui <- fluidPage(
         
         #Histogram tab
         tabPanel("Histogram",
+                 br(),
+                 
+                 selectInput(inputId = "feature", 
+                             label = NULL,
+                             choices = c("Perimeter Worst",
+                                         "Radius Worst",
+                                         "Texture Worst",
+                                         "Mean Concave Points"),
+                             selected = "Perimeter Worst",
+                             multiple = FALSE),
+                 
+                 hr(),
+                 
+                 plotlyOutput("histPlot",
+                              width = "1000px", 
+                              height="600px")%>% 
+                   withSpinner(color="#FFFFFF")
+                 
                  )
         
       ), #End tabset panel

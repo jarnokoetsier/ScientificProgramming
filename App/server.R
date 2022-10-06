@@ -216,18 +216,6 @@ server <- function(input, output, session) {
   #******************************************************************************#
   # 4) Scatter plot
   #******************************************************************************#
-
-  Xaxis <- eventReactive(input$Predict,{
-    req(input$Xaxis)
-    Xaxis <- input$Xaxis
-    return(Xaxis)
-  })
-  
-  Yaxis <- eventReactive(input$Predict,{
-    req(input$Yaxis)
-    Yaxis <- input$Yaxis
-    return(Yaxis)
-  })
   
   observedValue <- eventReactive(input$Predict,{
     observedValue <- as.data.frame(t(as.data.frame(c(input$ConcavePointsMean, 
@@ -240,8 +228,6 @@ server <- function(input, output, session) {
   })
    
    output$scatter <- renderPlotly({
-     req(Xaxis())
-     req(Yaxis())
      req(observedValue())
      
      # Get training data
@@ -261,8 +247,8 @@ server <- function(input, output, session) {
                    "Texture Worst",
                    "Perimeter Worst")
      
-     f1 <- which(features == Xaxis())
-     f2 <- which(features == Yaxis())
+     f1 <- which(features == input$Xaxis)
+     f2 <- which(features == input$Yaxis)
      
      # Observed value
      observedValue <- observedValue()
@@ -306,7 +292,71 @@ server <- function(input, output, session) {
    })
    
 
- 
+   #******************************************************************************#
+   # 5) Histogram
+   #******************************************************************************#
+   
+   output$histPlot <- renderPlotly({
+     req(observedValue())
+     
+     # Get training data
+     plotData <- trainingData[, colnames(trainingData) %in% colnames(trainingData_filtered)]
+     
+     # Reverse the log transformation
+     plotData <- exp(plotData) - 0.5
+     
+     # Add ID and diagnosis to data
+     plotData$ID <- rownames(plotData)
+     plotData <- inner_join(plotData, sampleInfo_filtered, by = c("ID" = "id"))
+     
+     
+     # get selected feature
+     features <- c("Mean Concave Points",
+                   "Radius Worst",
+                   "Texture Worst",
+                   "Perimeter Worst")
+     
+     f1 <- which(features == input$feature)
+     
+     # Observed value
+     observedValue <- observedValue()
+     colnames(observedValue) <-colnames(plotData)[1:4]
+     
+     histPlot <- ggplot()+
+       geom_histogram(aes(x = plotData[,f1], fill = plotData$diagnosis), bins = 100, position = "identity", alpha = 0.5) +
+       geom_vline(xintercept = observedValue[,f1], size = 1, color = "red", linetype = "dashed") +
+       xlab(features[f1]) +
+       ylab("Count") +
+       labs(title = NULL,
+            fill = "Diagnosis",
+            shape = "") +
+       theme_classic() +
+       theme(plot.title = element_text(hjust = 0.5,
+                                       face = "bold",
+                                       size = 16,
+                                       colour = "white"),
+             plot.subtitle = element_text(hjust = 0.5,
+                                          size = 10,
+                                          color = "white"),
+             legend.position = "bottom",
+             legend.title = element_blank(),
+             panel.border = element_blank(),
+             axis.text = element_text(colour = "white", size = 10),
+             axis.line=element_line(colour="white"),
+             axis.title = element_text(colour = "white"),
+             panel.grid.major = element_blank(),
+             panel.grid.minor = element_blank(),
+             panel.background = element_rect(fill = "#343434", color = "#343434"),
+             plot.background = element_rect(fill = "#343434"),
+             legend.background = element_rect(color = "#343434", fill = "#343434"),
+             legend.text = element_text(colour = "white"),
+       )+
+       scale_fill_manual(breaks = c("Malignant","Beneign"),
+                          values = c("#E12A36", "#7EC8E3"))
+     
+     return(ggplotly(histPlot, tooltip = "y"))
+     
+   })
   
   
 }
