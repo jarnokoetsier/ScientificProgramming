@@ -107,7 +107,7 @@ sampleInfo <- dataset[,1:2]
 sampleInfo$id <- as.character(sampleInfo$id)
 
 # Change B to Beneign and M to Malignant
-sampleInfo$diagnosis[sampleInfo$diagnosis == "B"] <- "Beneign"
+sampleInfo$diagnosis[sampleInfo$diagnosis == "B"] <- "Benign"
 sampleInfo$diagnosis[sampleInfo$diagnosis == "M"] <- "Malignant"
 
 
@@ -291,12 +291,12 @@ ggsave("ridgePlot.png",
 
 # Construct a PCA model using the filtered data
 
-#No tranformation:
+#No transformation:
 pcaList <-  prcomp(dataMatrix_scaled,        
                    retx = TRUE,
                    center = FALSE,
                    scale = FALSE)
-#Log tranformation:
+#Log transformation:
 pcaList_log <-  prcomp(dataMatrix_log_scaled,        
                    retx = TRUE,
                    center = FALSE,
@@ -305,19 +305,19 @@ pcaList_log <-  prcomp(dataMatrix_log_scaled,
 
 # Explained variance
 
-#No tranformation:
+#No transformation:
 explVar <- round(((pcaList$sdev^2)/sum(pcaList$sdev^2))*100,2)
-#Log tranformation:
+#Log transformation:
 explVar_log <- round(((pcaList_log$sdev^2)/sum(pcaList_log$sdev^2))*100,2)
 
 
 # Retrieve scores from pcaList object
 
-#No tranformation:
+#No transformation:
 PCAscores <- as.data.frame(pcaList$x)
 PCAscores$ID <- rownames(PCAscores)
 PCAscores <- inner_join(PCAscores, sampleInfo, by = c("ID" = "id"))
-#Log tranformation:
+#Log transformation:
 PCAscores_log <- as.data.frame(pcaList_log$x)
 PCAscores_log$ID <- rownames(PCAscores_log)
 PCAscores_log <- inner_join(PCAscores_log, sampleInfo, by = c("ID" = "id"))
@@ -325,7 +325,7 @@ PCAscores_log <- inner_join(PCAscores_log, sampleInfo, by = c("ID" = "id"))
 
 # Make PCA score plot
 
-#No tranformation:
+#No transformation:
 scorePlot <- ggplot(data = PCAscores, aes(x = PC1, y = PC2, color = diagnosis)) +
   geom_point(alpha = 0.9, size = 2) +
   ggtitle(label = "No Transformation") +
@@ -339,12 +339,12 @@ scorePlot <- ggplot(data = PCAscores, aes(x = PC1, y = PC2, color = diagnosis)) 
                                      size = 10),
         legend.position = "bottom",
         legend.title = element_blank()) +
-  scale_color_manual(breaks = c("Malignant", "Beneign"),
+  scale_color_manual(breaks = c("Malignant", "Benign"),
                      values=c("#D61C4E", "#293462")) +
-  scale_fill_manual(breaks = c("Malignant", "Beneign"),
+  scale_fill_manual(breaks = c("Malignant", "Benign"),
                     values=c("#D61C4E", "#293462"))
 
-#Log tranformation:
+#Log transformation:
 scorePlot_log <- ggplot(data = PCAscores_log, aes(x = PC1, y = PC2, color = diagnosis)) +
   geom_point(alpha = 0.9, size = 2) +
   ggtitle(label = "Log Transformation") +
@@ -358,9 +358,9 @@ scorePlot_log <- ggplot(data = PCAscores_log, aes(x = PC1, y = PC2, color = diag
                                      size = 10),
         legend.position = "bottom",
         legend.title = element_blank()) +
-  scale_color_manual(breaks = c("Malignant", "Beneign"),
+  scale_color_manual(breaks = c("Malignant", "Benign"),
                      values=c("#D61C4E", "#293462")) +
-  scale_fill_manual(breaks = c("Malignant", "Beneign"),
+  scale_fill_manual(breaks = c("Malignant", "Benign"),
                     values=c("#D61C4E", "#293462"))
 
 
@@ -468,9 +468,9 @@ anomalyHistogram <- ggplot(sampleInfo, aes(AnomalyScore1000, fill = diagnosis)) 
                                      size = 10),
         legend.position = "bottom",
         legend.title = element_blank()) +
-  scale_color_manual(breaks = c("Malignant", "Beneign"),
+  scale_color_manual(breaks = c("Malignant", "Benign"),
                      values=c("#D61C4E", "#293462")) +
-  scale_fill_manual(breaks = c("Malignant", "Beneign"),
+  scale_fill_manual(breaks = c("Malignant", "Benign"),
                     values=c("#D61C4E", "#293462"))
 
 # Save plot
@@ -531,7 +531,7 @@ PCA_ScorePlot_Outliers2 <- ggplot(data = PCAscores, aes(x = PC1, y = PC2, color 
                                      size = 10),
         legend.position = "right",
         legend.title = element_blank()) +
-  scale_color_manual(breaks = c("Malignant", "Beneign"),
+  scale_color_manual(breaks = c("Malignant", "Benign"),
                      values=c("#D61C4E", "#293462"))
 
 ggsave("PCA_ScorePlot_Outliers.png", 
@@ -593,7 +593,7 @@ DDplot2 <- ggplot(distanceDF, aes(x = MD, y = OD, color = Diagnosis)) +
                                      size = 10),
         legend.position = "right",
         legend.title = element_blank()) +
-  scale_color_manual(breaks = c("Malignant", "Beneign"),
+  scale_color_manual(breaks = c("Malignant", "Benign"),
                      values=c("#D61C4E", "#293462"))
 
 # Distance-distance plot on a logarithmic scale, colored by anomaly score
@@ -628,7 +628,7 @@ logDDplot2 <- ggplot(distanceDF, aes(x = log(MD), y = log(OD), color = Diagnosis
                                      size = 10),
         legend.position = "right",
         legend.title = element_blank()) +
-  scale_color_manual(breaks = c("Malignant", "Beneign"),
+  scale_color_manual(breaks = c("Malignant", "Benign"),
                      values=c("#D61C4E", "#293462"))
 
 # Save plots

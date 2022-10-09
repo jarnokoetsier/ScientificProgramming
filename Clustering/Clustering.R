@@ -28,7 +28,6 @@ CRANpackages <- c("tidyverse",       # Data formatting and plotting
                   'ggraph',          # Network and dendrogram visualizations
                   "RColorBrewer",    # Make color palettes 
                   "randomForest",    # Unsupervised random forest
-                  #"cluster",
                   "heatmaply",       # Make heatmaps
                   "gridExtra",       # Combine images in single plot
                   "grid",            # Add elements to the combined image
@@ -93,16 +92,17 @@ dataMatrix_malignant_scaled <- t((t(dataMatrix_malignant) - rowMeans(t(dataMatri
 #******************************************************************************#
 
 
-# Peform pca
+# Perform PCA
 pcaList <-  prcomp(dataMatrix_malignant_scaled,        
                    retx = TRUE,
                    center = FALSE,
                    scale = FALSE)
 
 
-# Explained variance
+# Calculate explained variances
 explVar <- round(((pcaList$sdev^2)/sum(pcaList$sdev^2))*100,2)
 
+# Get cumulative explained variances
 cumVar <- rep(NA, length(explVar))
 for (var in 1:length(explVar)) {
   if (var != 1){
@@ -112,6 +112,7 @@ for (var in 1:length(explVar)) {
   }
 }
 
+# Get maximum number of PC's for which the cumulative explained variances is less than 95%
 nPCs <- max(which(cumVar < 95))
 
 
@@ -188,7 +189,7 @@ rf <- randomForest(x = dataMatrix_malignant,
 # proximity matrix
 prox <- rf$proximity
 
-# Convert to dissimilarity matrix
+# Convert to dissimilarity (distant) matrix
 diss <- 1 - rf$proximity
 
 
@@ -220,7 +221,6 @@ dendrogram <- ggraph(hierPlot,layout = 'dendrogram', circular = FALSE, height = 
   geom_rect(aes(xmin = table(clusters_rf$Cluster_rf)[1] + table(clusters_rf$Cluster_rf)[3], 
                 xmax = table(clusters_rf$Cluster_rf)[1] + table(clusters_rf$Cluster_rf)[3] + table(clusters_rf$Cluster_rf)[2], 
                 ymin = 0, ymax = 3), fill = "#D95F02", alpha = 0.005, color = "#D95F02", size = 1.5) +
-  #geom_hline(yintercept = nrow(df) - k + 0.5, size = 1.5, color = "red", linetype = "dashed") +
   labs(color = "Cluster") +
   theme_void() +
   scale_color_brewer(palette = "Dark2")
@@ -271,7 +271,7 @@ heatmaply(
 )
 
 #******************************************************************************#
-# Principal coordinate analysis (PCoA)
+# Principal Coordinate Analysis (PCoA)
 #******************************************************************************#
 
 # PCoA is done by performing PCA on the dissimilarity matrix
@@ -344,7 +344,7 @@ ggsave("PCoAplot.png",
 # PCA
 #******************************************************************************#
 
-# Peform pca
+# Perform PCA
 pcaList <-  prcomp(dataMatrix_malignant_scaled,        
                    retx = TRUE,
                    center = FALSE,
@@ -421,15 +421,15 @@ plotPCA_scores$combined[!(plotPCA_scores$combined%in% c("1/1", "2/3", "3/2"))] <
 # Get PCA projections of beneign samples:
 
 # 1) Get beneign samples
-dataMatrix_beneign <- dataMatrix_filtered[!(rownames(dataMatrix_filtered) %in% rownames(dataMatrix_malignant)),]
+dataMatrix_benign <- dataMatrix_filtered[!(rownames(dataMatrix_filtered) %in% rownames(dataMatrix_malignant)),]
 
 # 2) Scale beneign samples using the malignant samples
-beneign_scaled <-  t((t(dataMatrix_beneign) - rowMeans(t(dataMatrix_malignant)))/(apply(t(dataMatrix_malignant),1,sd)))
+benign_scaled <-  t((t(dataMatrix_benign) - rowMeans(t(dataMatrix_malignant)))/(apply(t(dataMatrix_malignant),1,sd)))
 
 # 3) Calculate the projections
-projectBeneign <- as.data.frame(as.matrix(beneign_scaled) %*% as.matrix(pcaList$rotation))
-projectBeneign$ID <- rownames(projectBeneign)
-projectBeneign$combined <- rep("Beneign", nrow(projectBeneign))
+projectBenign <- as.data.frame(as.matrix(benign_scaled) %*% as.matrix(pcaList$rotation))
+projectBenign$ID <- rownames(projectBenign)
+projectBenign$combined <- rep("Benign", nrow(projectBenign))
 
 # Collect PCA loadings into a data frame
 plotPCA_loadings <- data.frame(pcaList$rotation)
@@ -440,7 +440,7 @@ plotPCA_loadings <- inner_join(plotPCA_loadings, featureInfo, by = c("Feature" =
 # PCA plot color by combined clusters/diagnosis
 PCAcombined <- ggplot(plotPCA_scores, aes(x = PC1, y = PC2, color = combined)) +
   geom_point(size = 2) +
-  geom_point(data = projectBeneign, aes(x = PC1, y = PC2, color = combined),alpha = 0.7) +
+  geom_point(data = projectBenign, aes(x = PC1, y = PC2, color = combined),alpha = 0.7) +
   xlab(paste0("PC1 (", explVar[1],"%)")) +
   ylab(paste0("PC2 (", explVar[2],"%)")) +
   ggtitle("Score Plot") +
@@ -479,7 +479,7 @@ ggsave("PCAplot2.png",
                     loading_plot,
                     ncol = 2, 
                     nrow = 1,
-       bottom = textGrob("NOTE: The PCA model is constructed using the malignant samples only. The beneign samples are projected.",gp=gpar(fontsize=10,font=3))),
+       bottom = textGrob("NOTE: The PCA model is constructed using the malignant samples only. The benign samples are projected.",gp=gpar(fontsize=10,font=3))),
        width = 10, height = 6)
 
 
@@ -505,22 +505,22 @@ plotMalignant<- inner_join(plotMalignant, clusterDF, by = c("ID" = "ID"))
 plotMalignant$combined <- paste0(plotMalignant$Cluster_Network, "/", plotMalignant$Cluster_rf)
 plotMalignant$combined[!(plotMalignant$combined%in% c("1/1", "2/3", "3/2"))] <- "Other"
 
-# Get data from beneign samples
-plotBeneign <- dataMatrix_filtered[!(rownames(dataMatrix_filtered) %in% rownames(dataMatrix_malignant)),]
-plotBeneign$ID <- rownames(plotBeneign)
-plotBeneign$Cluster_Network <- rep(NA, nrow(plotBeneign))
-plotBeneign$Cluster_rf <- rep(NA, nrow(plotBeneign))
-plotBeneign$combined <- rep("Beneign", nrow(plotBeneign))
+# Get data from benign samples
+plotBenign <- dataMatrix_filtered[!(rownames(dataMatrix_filtered) %in% rownames(dataMatrix_malignant)),]
+plotBenign$ID <- rownames(plotBenign)
+plotBenign$Cluster_Network <- rep(NA, nrow(plotBenign))
+plotBenign$Cluster_rf <- rep(NA, nrow(plotBenign))
+plotBenign$combined <- rep("Benign", nrow(plotBenign))
 
-# combine malignant and beneign samples
-plotAll <- rbind.data.frame(plotMalignant, plotBeneign)
+# combine malignant and benign samples
+plotAll <- rbind.data.frame(plotMalignant, plotBenign)
 
 # In the loading plot (PCAplot2.png), we saw that Mean Compactness and Mean Area 
 # might be able to distinguish between the clusters. So, let;s make a scatter 
 # plot using these two variables
 scatterPlot <- ggplot() +
-  geom_point(data = plotAll[plotAll$combined == "Beneign",], aes(x = exp(area_mean)-0.5, y = exp(compactness_mean)-0.5,  color = "Beneign"), size = 2, alpha = 0.7) +
-  geom_point(data = plotAll[plotAll$combined != "Beneign",], aes(x = exp(area_mean)-0.5, y = exp(compactness_mean)-0.5, color = combined), size = 3, alpha = 1) +
+  geom_point(data = plotAll[plotAll$combined == "Benign",], aes(x = exp(area_mean)-0.5, y = exp(compactness_mean)-0.5,  color = "Beneign"), size = 2, alpha = 0.7) +
+  geom_point(data = plotAll[plotAll$combined != "Benign",], aes(x = exp(area_mean)-0.5, y = exp(compactness_mean)-0.5, color = combined), size = 3, alpha = 1) +
   labs(color = "Cluster\n(Network/URF)") +
   xlab("Mean Area") +
   ylab("Mean Compactness") +

@@ -89,9 +89,9 @@ all(rownames(dataMatrix_filtered) == sampleInfo_filtered$id)
 
 # Select representative subset from the beneign samples:
 
-# Select beneign samples from the data
-dataMatrix_B <- dataMatrix_filtered[sampleInfo_filtered$diagnosis == "Beneign",]
-sampleInfo_B <- sampleInfo_filtered[sampleInfo_filtered$diagnosis == "Beneign",]
+# Select benign samples from the data
+dataMatrix_B <- dataMatrix_filtered[sampleInfo_filtered$diagnosis == "Benign",]
+sampleInfo_B <- sampleInfo_filtered[sampleInfo_filtered$diagnosis == "Benign",]
 
 # Select training set (80% of the samples) using Kennard-stone algorithm
 selectedSamples_B <- prospectr::kenStone(
@@ -102,7 +102,7 @@ selectedSamples_B <- prospectr::kenStone(
 
 # Select representative subset from the malignant samples
 
-# Select beneign samples from the data
+# Select malignant samples from the data
 dataMatrix_M <- dataMatrix_filtered[sampleInfo_filtered$diagnosis == "Malignant",]
 sampleInfo_M <- sampleInfo_filtered[sampleInfo_filtered$diagnosis == "Malignant",]
 
@@ -387,6 +387,7 @@ trainingData_filtered <- trainingData_scaled[,!(colnames(trainingData_scaled) %i
 save(trainingData_filtered, file = "trainingData_filtered.RData")
 
 # Train model
+nCores <- detectCores()
 testModel <- logisticRegression_par(trainingData = trainingData_filtered,
                                 trainingClass = trainingClass,
                                 nfold = 5,
@@ -407,8 +408,8 @@ coeffPlot <- inner_join(coeffPlot, featureInfo, by = c("key" = "Name"))
 # Construct final model
 finalModel <- glmnet(x = trainingData_scaled[,!(colnames(trainingData_scaled) %in% excludedFeatures)], 
                    y = trainingClass, 
-                   alpha = bestAlpha[31-n_features], 
-                   lambda = bestLambda[31-n_features],
+                   alpha = modelInfo$bestAlpha[31-n_features], 
+                   lambda = modelInfo$bestLambda[31-n_features],
                    family = "binomial",
                    standardize = FALSE)
 

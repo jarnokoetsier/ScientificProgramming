@@ -36,7 +36,7 @@ logisticRegression <- function(trainingData, trainingClass, nfold, nrep, alpha, 
       #trainingClass1 <- rose_train$data[,ncol(rose_train$data)]
       
       # Create folds (seperate for beneign and malignant to ensure an even distribution among the folds)
-      fold_B <- createFolds(which(trainingClass1 == "Beneign"), k = nfold)
+      fold_B <- createFolds(which(trainingClass1 == "Benign"), k = nfold)
       fold_M <- createFolds(which(trainingClass1 == "Malignant"), k = nfold)
       
       
@@ -44,7 +44,7 @@ logisticRegression <- function(trainingData, trainingClass, nfold, nrep, alpha, 
         count = count + 1
         
         # Get folds
-        folds <- c(which(trainingClass1 == "Beneign")[fold_B[[i]]], 
+        folds <- c(which(trainingClass1 == "Benign")[fold_B[[i]]], 
                 which(trainingClass1 == "Malignant")[fold_M[[i]]])
         
         #split training data in training and validation set
@@ -109,7 +109,7 @@ logisticRegression_par <- function(trainingData, trainingClass, nfold, nrep, alp
       trainingClass1 <- ada_train[,ncol(ada_train)]
       
       # Create folds (seperate for beneign and malignant to ensure an even distribution among the folds)
-      fold_B <- createFolds(which(trainingClass1 == "Beneign"), k = nfold)
+      fold_B <- createFolds(which(trainingClass1 == "Benign"), k = nfold)
       fold_M <- createFolds(which(trainingClass1 == "Malignant"), k = nfold)
       
       
@@ -117,7 +117,7 @@ logisticRegression_par <- function(trainingData, trainingClass, nfold, nrep, alp
         count = count + 1
         
         # Get folds
-        folds <- c(which(trainingClass1 == "Beneign")[fold_B[[i]]], 
+        folds <- c(which(trainingClass1 == "Benign")[fold_B[[i]]], 
                    which(trainingClass1 == "Malignant")[fold_M[[i]]])
         
         #split training data in training and validation set

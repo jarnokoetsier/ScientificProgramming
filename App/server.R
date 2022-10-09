@@ -132,7 +132,7 @@ server <- function(input, output, session) {
     if(prob() > 0.5){
       class <- "'Maligant'"
     } else {
-      class <- "'Beneign'"
+      class <- "'Benign'"
     }
     txt <- paste0("Predicted Class: ", class, 
                   "\nClass Probability: ", round(prob(),3))
@@ -351,7 +351,7 @@ server <- function(input, output, session) {
              legend.background = element_rect(color = "#343434", fill = "#343434"),
              legend.text = element_text(colour = "white"),
        )+
-       scale_fill_manual(breaks = c("Malignant","Beneign"),
+       scale_fill_manual(breaks = c("Malignant","Benign"),
                           values = c("#E12A36", "#7EC8E3"))
      
      return(ggplotly(histPlot, tooltip = "y"))
