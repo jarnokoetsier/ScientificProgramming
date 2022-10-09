@@ -11,6 +11,4 @@
 *.RData
 
 # Ignore .Rhistory files
-Classification/.Rhistory
-Clustering/.Rhistory
-Pre-Processing/.Rhistory
+.Rhistory
