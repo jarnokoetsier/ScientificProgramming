@@ -13,7 +13,7 @@ For the Scientific Programming (MSB1015) course, an adjusted version of the *Bre
 ## Data
 The original Breast Cancer Wisconsin (Diagnostic) Data Set can be downloaded from [Kaggle](https://www.kaggle.com/datasets/uciml/breast-cancer-wisconsin-data). However, for the current analysis a modified version of this data set was used. [Contact me](#Contact) to access the adjusted data set.
 
-The data set consist of 569 samples and includes the sample ID, the sample diagnosis (M: Malignant; B: Beneign), as well as 30 variables computed from a digitized image of a fine needle aspirate (FNA) of a breast mass. These 30 variables describe features from the cell nuclei in these images and encompasses the **mean**, standard error (**SE**), and the mean of the three largest values (**worst**) of the following 10 characteristics:
+The data set consist of 569 samples and includes the sample ID, the sample diagnosis (M: Malignant; B: Benign), as well as 30 variables computed from a digitized image of a fine needle aspirate (FNA) of a breast mass. These 30 variables describe features from the cell nuclei in these images and encompasses the **mean**, standard error (**SE**), and the mean of the three largest values (**worst**) of the following 10 characteristics:
 1. **Radius:** The mean of distances from center to points on the border of the cell nucleus.
 2. **Texture:** The standard deviation of gray-scale values of the digitalized image.
 3. **Perimeter:** The total length of the border of the cell nucleus.
@@ -29,7 +29,7 @@ More information about the variables can be found on page 8 in this [paper by We
 
 ## Research aim
 The aim of the analysis is three-fold:
-1. Construct a robust classifier to distinguish malignant from beneign samples (**Classification**).
+1. Construct a robust classifier to distinguish malignant from benign samples (**Classification**).
 2. Identify subclasses within the maligant samples (**Clustering**).
 3. Create an app for the prediction and visualization of new samples (**App**).
 
