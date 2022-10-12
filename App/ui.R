@@ -1,3 +1,13 @@
+#=============================================================================#
+# File: ui.R
+# Date: October 5, 2022										                                      
+# Author: Jarno Koetsier                                                      
+# Data: NA
+#
+# R version: 4.2.1 (getRversion())
+# RStudio version: 2022.7.1.544 (RStudio.Version())
+#=============================================================================#
+
 ui <- fluidPage(
   theme = shinytheme("spacelab"),
   setBackgroundColor("#343434"),

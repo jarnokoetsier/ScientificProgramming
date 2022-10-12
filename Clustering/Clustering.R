@@ -3,6 +3,9 @@
 # Date: October 5, 2022										                                      
 # Author: Jarno Koetsier                                                      
 # Data: 'dataMatrix_filtered.RData','featureInfo.Rdata','sampleInfo_filtered.RData'
+#
+# R version: 4.2.1 (getRversion())
+# RStudio version: 2022.7.1.544 (RStudio.Version())
 #=============================================================================#
 
 
@@ -42,7 +45,6 @@ versions <- c("1.3.2",
               "2.0.6",
               "1.1.3",
               "4.7.1.1",
-              #"2.1.3",
               "1.3.0",
               "2.3",
               "4.2.1",
@@ -115,8 +117,7 @@ for (var in 1:length(explVar)) {
 # Get maximum number of PC's for which the cumulative explained variances is less than 95%
 nPCs <- max(which(cumVar < 95))
 
-
-# Score plot
+# Get PCA scores
 PCA_scores <- as.data.frame(pcaList$x[,1:nPCs])
 
 
@@ -180,7 +181,7 @@ clusters_network <- data.frame(
 # Unsupervised random forest
 #******************************************************************************#
 
-# Construct unsupervised random forest
+# Construct unsupervised random forest model
 set.seed(123)
 rf <- randomForest(x = dataMatrix_malignant,
                      importance = TRUE,
@@ -239,7 +240,7 @@ ggsave(dendrogram, file = "Dendrogram.png", width = 8, height = 8)
 # Compare network-based and URF-based clusters
 table(clusters_rf$Cluster_rf, clusters_network$Cluster_Network)
 
-# So, we see the following:
+# So, we see the following three main ensemble clusters:
 # -Cluster 1 from the Network and cluster 1 from the URF-Hierarchical clustering
 # -Cluster 2 from the Network and cluster 3 from the URF-Hierarchical clustering
 # -Cluster 3 from the Network and cluster 2 from the URF-Hierarchical clustering
@@ -630,7 +631,7 @@ ggsave(ClusterProbabilities, file = "ClusterProbabilities.png", width = 10, heig
 
 # As we already saw in the PCA plot and scatter plot. The red cluster encompasses
 # more extreme malignant samples that can easily be distiguished from the beneign
-# samples. In contrast, the red and the green clusters are more closely related
+# samples. In contrast, the blue and the green clusters are more closely related
 # to the beneign samples and are thus more difficult to predict.
 ################################################################################
 
