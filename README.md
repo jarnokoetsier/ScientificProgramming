@@ -34,7 +34,7 @@ The aim of the analysis is three-fold:
 3. Create an app for the prediction and visualization of new samples (**App**).
 
 ## Analysing the data
-Before analysing the data, be aware of the following:
+When performing the analysis, be aware of the following:
 
 1. Put the data file (`Data.xlsx`) into the main folder (`..PATH../ScientificProgramming/`).
 2. Furthermore, it is important to run the scripts in the following order:
