@@ -13,11 +13,6 @@
 # Clear working environment
 rm(list = ls())
 
-# Set working directory
-wd <- getwd()
-homeDir <- str_remove(wd, "/App")
-
-
 # Install (if needed) and load "devtools" package (version 2.4.4)
 # This package is needed to install the correct versions of the packages
 if (!requireNamespace("devtools", quietly = TRUE))
@@ -61,6 +56,10 @@ for (pkg in 1:length(CRANpackages)) {
   require(as.character(CRANpackages[pkg]), character.only = TRUE)
 }
 
+# Set working directory
+wd <- getwd()
+homeDir <- str_remove(wd, "/App")
+
 # Load data
 load(paste0(homeDir, "/Classification/trainingData_filtered.RData"))
 load(paste0(homeDir, "/Classification/trainingData.RData"))
@@ -69,6 +68,4 @@ load(paste0(homeDir, "/Classification/testData.RData"))
 load(paste0(homeDir, "/Classification/finalModel.RData"))
 load(paste0(homeDir, "/Pre-Processing/sampleInfo_filtered.RData"))
 load(paste0(homeDir, "/Pre-Processing/featureInfo.RData"))
-
-
 

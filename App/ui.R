@@ -158,7 +158,19 @@ ui <- fluidPage(
                               height="600px")%>% 
                    withSpinner(color="#FFFFFF")
                  
-                 )
+                 ),
+        
+        #Information tab
+        tabPanel("Information",icon = icon("fa-regular fa-circle-info", verify_fa = FALSE),
+                 h1(strong("Information"), style = 'color:white'),
+                 br(),
+                 h4("To get started, click on ", strong("Example"), 
+                    " and then on ", strong("Predict"),
+                    " in the left-hand panel to run an example.",
+                    style = 'color:white'),
+                 h4("Now, you can click on the different tabs to explore your results.",
+                    style = 'color:white')
+        )
         
       ), #End tabset panel
       
