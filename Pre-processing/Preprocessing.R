@@ -20,7 +20,7 @@
 # Clear working environment
 rm(list = ls())
 
-# Set path to the project folder
+# IMPORTANT: Set path to the project folder!!!!
 homeDir <- "C:/Users/Gebruiker/Documents/GitHub/ScientificProgramming"
 
 # Set working directory to the pre-processing folder

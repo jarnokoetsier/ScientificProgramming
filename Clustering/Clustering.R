@@ -18,7 +18,7 @@
 # Clear working environment
 rm(list = ls())
 
-# Set working directory
+# IMPORTANT: Set path to the project folder!!!!
 homeDir <- "C:/Users/Gebruiker/Documents/GitHub/ScientificProgramming"
 
 # Set working directory to the clustering folder
