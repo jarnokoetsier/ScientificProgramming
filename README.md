@@ -44,6 +44,7 @@ When performing the analysis, be aware of the following:
     * [App](#App)
 3. Finally, please follow the instructions in the scripts carefully to ensure a successfull analysis.
 
+![Workflow](/Figures/Workflow.JPG?raw=true "Workflow")
 
 ## App
 To run the app in RStudio, click on "Run App" in the top right corner when having either the `App/ui.R`, `App/server.R`, or `App/global.R` file open in the RStudio window.
