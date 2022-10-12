@@ -3,8 +3,10 @@
 # Date: October 5, 2022										                                      
 # Author: Jarno Koetsier                                                      
 # Data: 'dataMatrix_filtered.RData','featureInfo.Rdata','sampleInfo_filtered.RData'
+#
+# R version: 4.2.1 (getRversion())
+# RStudio version: 2022.7.1.544 (RStudio.Version())
 #=============================================================================#
-
 
 
 ###############################################################################
@@ -16,13 +18,13 @@
 # Clear working environment
 rm(list = ls())
 
-# Set path to the project folder
+# IMPORTANT: Set path to the project folder!!!!
 homeDir <- "C:/Users/Gebruiker/Documents/GitHub/ScientificProgramming"
 
 # Set working directory to the classification folder
 setwd(paste0(homeDir, "/Classification"))
 
-# Install (if needed) and load "devtools" package
+# Install (if needed) and load "devtools" package (version 2.4.4)
 # This package is needed to install the correct versions of the packages
 if (!requireNamespace("devtools", quietly = TRUE))
   install.packages("devtools", ask = FALSE)
@@ -37,7 +39,8 @@ CRANpackages <- c("tidyverse",     # Data formatting and plotting
                   "grid",          # Add elements to the combined image
                   "UBL",           # Adasyn algorithm for class imbalance
                   "foreach",       # Needed for parallel computing
-                  "doParallel")    # Needed for parallel computing
+                  "doParallel",    # Needed for parallel computing
+                  "pROC")          # Make ROC curve
 
 # Versions of required packages
 versions <- c("1.3.2",
@@ -48,7 +51,8 @@ versions <- c("1.3.2",
               "4.2.1",
               "0.0.7",
               "1.5.2",
-              "1.0.17")
+              "1.0.17",
+              "1.18.0")
 
 # Install (if not yet installed) and load the required CRAN packages:
 for (pkg in 1:length(CRANpackages)) {
@@ -98,7 +102,6 @@ selectedSamples_B <- prospectr::kenStone(
   X = dataMatrix_B, 
   k = round(0.8*nrow(dataMatrix_B))
   )
-
 
 # Select representative subset from the malignant samples
 
@@ -153,23 +156,23 @@ pcaList <-  prcomp(trainingData_scaled,
                    center = FALSE,
                    scale = FALSE)
 
-# Scores training data
+# Get the PCA scores of the training data
 scores_train <- as.data.frame(pcaList$x)
 scores_train$ID <- rownames(scores_train)
 scores_train <- inner_join(scores_train, sampleInfo_filtered, by = c("ID" = "id"))
 
-# Explained variance
+# Calculate the explained variance of the PCs
 explVar <- round(((pcaList$sdev^2)/sum(pcaList$sdev^2))*100,2)
 
-# Scale test data (using the sd and mean of the training data)
+# Scale test data (using the standard deviation and mean of the training data)
 testData_scaled <- t((t(testData) - rowMeans(t(trainingData)))/(apply(t(trainingData),1,sd)))
 
-# Scores test data
+# Calculate the scores of the test data
 scores_test <- as.data.frame(as.matrix(testData_scaled) %*% as.matrix(pcaList$rotation))
 scores_test$ID <- rownames(scores_test)
 scores_test <- inner_join(scores_test, sampleInfo_filtered, by = c("ID" = "id"))
 
-# Combine scores of test and training data in a single data frame
+# Combine the scores of test and training data in a single data frame
 scores_all <- rbind.data.frame(scores_train, scores_test)
 scores_all$Train <- c(rep("Training", nrow(scores_train)), rep("Test", nrow(scores_test)))
 scores_all$Group <- paste0(scores_all$Train, ": ", scores_all$diagnosis)
@@ -218,32 +221,33 @@ load("trainingClass.RData")
 load("testData.RData")
 load("testClass.RData")
 
-# Load function in MLfunction script
+# Load function in MLfunction.R script. This script contains functions for
+# model training
 source("MLfunction.R")
 
-# Scale training data
+# Scale the training data
 trainingData_scaled <- t((t(trainingData) - rowMeans(t(trainingData)))/(apply(t(trainingData),1,sd)))
 
-# Test for the following alpha values:
+# Perform grid search for the following alpha values:
 alpha <- seq(0,1,0.2)
 
-# Test for the following lambda values:
+# Perform grid search for the following lambda values:
 lambda <- 10^seq(-4,-2,length.out = 5)
 
 # Make a parameter grid for each combination of alpha and lambda:
 parameterGrid <- expand.grid(alpha, lambda)
 
-# Number of repeats (nrep) and CV folds (nfolds)
+# Number of repeats (nrep) and CV folds (nfold)
 nrep = 10
 nfold = 5
 
-# Make an empty object for saving values of the models:
+# Make empty objects for saving values of the models:
 accuracy <- matrix(NA, nrow = nrep*nfold, ncol = (ncol(trainingData_scaled)-1))
 bestAlpha <- rep(NA, (ncol(trainingData_scaled)-1))
 bestLambda <- rep(NA, (ncol(trainingData_scaled)-1))
 removedFeature <- rep(NA, (ncol(trainingData_scaled)-1))
 
-# Number of cores used for the parallelization
+# Number of cores used for the parallel computing
 nCores <- detectCores()
 
 # Train model using all features
@@ -258,19 +262,14 @@ testModel <- logisticRegression_par(trainingData = trainingData_scaled,
 
 
 # The best parameter combination (alpha & lambda) for which the mean accuracy is the highest:
-#bestParameters <- which.max(colMeans(testModel$Accuracy))
 bestParameters <-  which.max(sapply(testModel, function(x){mean(x$Accuracy)}))
 
 # The worst feature has the lowest absolute average coefficient:
-#worstFeature <- which.min(rowMeans(abs(testModel$Coefficients[[bestParameters]])))
 worstFeature <- which.min(rowMeans(abs(testModel[[bestParameters]]$Coefficients)))
 
-
-# Collect values of model
-#accuracy[,1] <- testModel$Accuracy[,bestParameters]
+# Collect values (accuracy, feature that should be removed, etc.) of model
 accuracy[,1] <- testModel[[bestParameters]]$Accuracy
 removedFeature[1] <- colnames(trainingData_scaled)[worstFeature]
-#bestAlpha[1] <- parameterGrid[bestParameters,1]
 bestAlpha[1] <- testModel[[bestParameters]]$Alpha
 bestLambda[1] <- testModel[[bestParameters]]$Lambda
 
@@ -361,7 +360,6 @@ accuracy_plot <- ggplot(plotAccuracy, aes(x = nFeatures, y = Accuracy.x, fill = 
                                                  "\nLambda: ", round(modelInfo$bestLambda[31 - n_features],3)), color = "red") +
   geom_boxplot(aes(group = nFeatures), alpha = 0.5) +
   geom_jitter(aes(group = nFeatures, color = Accuracy.y)) +
-  #geom_point(data = plotMeanAccuracy, aes(x = nFeatures, y = Accuracy), size = 4, alpha = 0.5, shape = 17, color = "red") +
   xlab("Number of features") +
   ylab("CV accuracy") +
   labs(fill = "Mean accuracy", color = "Mean accuracy") +
@@ -379,14 +377,16 @@ ggsave(plot = accuracy_plot, filename = "accuracyPlot.png", width = 10, height =
 
 # Stability of coefficients
 
-#Exclude the 27 worst features: after removing more than 24 features the CV accuracy decreases
+# Exclude the 26 worst features: 
+# We saw that after removing more than 26 features the CV accuracy decreases
+# in the accuracyPlot.png image
 excludedFeatures <- modelInfo$removedFeature[1:(30 - n_features)]
 trainingData_filtered <- trainingData_scaled[,!(colnames(trainingData_scaled) %in% excludedFeatures)]
 
 # save filtered training data
 save(trainingData_filtered, file = "trainingData_filtered.RData")
 
-# Train model
+# Train model again, but now on the full training data
 nCores <- detectCores()
 testModel <- logisticRegression_par(trainingData = trainingData_filtered,
                                 trainingClass = trainingClass,
@@ -419,7 +419,11 @@ save(finalModel, file = "finalModel.RData")
 # Get coefficients from final model
 finalCoeffs <- data.frame(finalModel$beta[,1],
                           rownames(finalModel$beta))
+
+# Set the column names
 colnames(finalCoeffs) <- c("value", "key")
+
+# Combine data frame with feature information
 finalCoeffs <- inner_join(finalCoeffs, featureInfo, by = c("key" = "Name"))
 
 
@@ -469,6 +473,10 @@ pred_test <- predict(finalModel, testData_filtered, type = "class")
 cm_test <- confusionMatrix(as.factor(pred_test), testClass)
 cm_test
 
+#=============================================================================#
+# 100 % accuracy on test data!!!!!!
+#=============================================================================#
+
 # Make a prediction on the training set
 pred_train <- predict(finalModel, trainingData_filtered, type = "class")
 
@@ -476,6 +484,9 @@ pred_train <- predict(finalModel, trainingData_filtered, type = "class")
 cm_train <- confusionMatrix(as.factor(pred_train), trainingClass)
 cm_train
 
+#=============================================================================#
+# 96 % accuracy on training data!!!!!!
+#=============================================================================#
 
 # Get class probability for each test sample
 pred_prob_test <- predict(finalModel, testData_filtered, type = "response")
@@ -540,6 +551,80 @@ ggsave("probabilityPlot.png",
        width = 12, height = 6)
 
 
+
+# Make specificity-sensitivity (ROC) curve
+
+# Training Data: calculate specificity, sensitivity, etc. for each threshold value
+roc_list_training <- roc(response = ifelse(trainingClass == "Malignant", 1, 0), predictor = trainingProb$Probability)
+plotROC_training <- coords(roc_list_training, "all", ret=c("threshold",
+                                         "specificity", 
+                                         "sensitivity", 
+                                         "accuracy",
+                                         "precision", 
+                                         "recall"), transpose = FALSE)
+
+
+# Make ROC plot
+roc_training <- ggplot(plotROC_training, aes(x = 1-specificity, y = sensitivity)) +
+  geom_path(size = 2, color = "#D95F02") +
+  geom_polygon(alpha = 0.5, fill= "#D95F02") +
+  geom_area(data = data.frame(x = c(0,0.5,1), y = c(0,0.5,1)), aes(x = x, y = y), alpha = 0.5, fill= "#D95F02") +
+  geom_abline(intercept = 0, slope = 1, size = 1.5, linetype = "dashed") +
+  geom_text(x = 0.5, y = 0.8, label = paste0("AUC: ", round(auc(roc_list_training),2)), size = 6, color = "#D95F02") +
+  geom_point(data = plotROC_training[which(round(plotROC_training$threshold,1) == 0.5)[1],],  aes(x = 1-specificity, y = sensitivity), size = 4, color = "red") +
+  xlab("1 - Specificity") +
+  ylab("Sensitivity") +
+  ggtitle("Training data") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5,
+                                  face = "bold",
+                                  size = 16),
+        plot.subtitle = element_text(hjust = 0.5,
+                                     size = 10),
+        legend.position = "none",
+        legend.title = element_blank())
+
+
+# Test Data: calculate specificity, sensitivity, etc. for each threshold value
+roc_list_test <- roc(response = ifelse(testClass == "Malignant", 1, 0), predictor = testProb$Probability)
+plotROC_test <- coords(roc_list_test, "all", ret=c("threshold",
+                                                           "specificity", 
+                                                           "sensitivity", 
+                                                           "accuracy",
+                                                           "precision", 
+                                                           "recall"), transpose = FALSE)
+# Make ROC plot
+roc_test <- ggplot(plotROC_test, aes(x = 1-specificity, y = sensitivity)) +
+  geom_path(size = 2, color = "#7570B3") +
+  geom_polygon(alpha = 0.5, fill= "#7570B3") +
+  geom_area(data = data.frame(x = c(0,0.5,1), y = c(0,0.5,1)), aes(x = x, y = y), alpha = 0.5, fill= "#7570B3") +
+  geom_abline(intercept = 0, slope = 1, size = 1.5, linetype = "dashed") +
+  geom_text(x = 0.5, y = 0.8, label = paste0("AUC: ", round(auc(roc_list_test),2)), size = 6, color = "#7570B3") +
+  geom_point(data = plotROC_test[which(round(plotROC_test$threshold,1) == 0.5)[1],],  aes(x = 1-specificity, y = sensitivity), size = 4, color = "red") +
+  xlab("1 - Specificity") +
+  ylab("Sensitivity") +
+  ggtitle("Test data") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5,
+                                  face = "bold",
+                                  size = 16),
+        plot.subtitle = element_text(hjust = 0.5,
+                                     size = 10),
+        legend.position = "none",
+        legend.title = element_blank())
+
+
+
+# Combine and save the plots
+ggsave("rocPlot.png", 
+       grid.arrange(roc_training, 
+                    roc_test, 
+                    ncol = 2, 
+                    nrow = 1,
+                    top = textGrob("ROC",gp=gpar(fontsize=20,font=2))), 
+       width = 12, height = 6)
+
+  
 
 ################################################################################
 
