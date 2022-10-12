@@ -1,5 +1,5 @@
 # Scientific Programming Project (MSB1015)
-![licence](https://badgen.net/badge/licence/MIT/green)
+![licence](https://badgen.net/badge/licence/MIT/purple)
 ![status](https://badgen.net/badge/status/building/orange)
 
 For the Scientific Programming (MSB1015) course, an adjusted version of the *Breast Cancer Wisconsin (Diagnostic) Data Set* was analysed. This repository contains all the scripts that were used for this analysis.
