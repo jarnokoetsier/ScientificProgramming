@@ -77,7 +77,7 @@ ui <- fluidPage(
       tabsetPanel(
         
         #Class probability tab
-        tabPanel("Class Probability", value = "probs",
+        tabPanel("Class Probability", value = "probs", icon = icon("fa-solid fa-house", verify_fa = FALSE),
                  plotlyOutput("ProbPlot",
                             width = "1000px", 
                             height="600px")%>% 
@@ -94,7 +94,7 @@ ui <- fluidPage(
                  ),
         
         #PCA tab
-        tabPanel("PCA", value = "pca",
+        tabPanel("PCA", value = "pca", icon = icon("fa-solid fa-square-check", verify_fa = FALSE),
                  plotlyOutput("PCAplot",
                               width = "1000px", 
                               height="600px")%>% 
@@ -102,7 +102,7 @@ ui <- fluidPage(
                  ),
         
         #Scatter plot tab
-        tabPanel("Scatter Plot", 
+        tabPanel("Scatter Plot", icon = icon("fa-solid fa-arrow-pointer", verify_fa = FALSE),
                  br(),
                  fluidRow(
                    column(width = 3,
@@ -139,7 +139,7 @@ ui <- fluidPage(
                  ),
         
         #Histogram tab
-        tabPanel("Histogram",
+        tabPanel("Histogram", icon = icon("fa-solid fa-arrow-pointer", verify_fa = FALSE),
                  br(),
                  
                  selectInput(inputId = "feature", 
@@ -164,9 +164,9 @@ ui <- fluidPage(
         tabPanel("Information",icon = icon("fa-regular fa-circle-info", verify_fa = FALSE),
                  h1(strong("Information"), style = 'color:white'),
                  br(),
-                 h4("To get started, click on ", strong("Example"), 
+                 h4("To get started with an example, click on ", strong("Example"), 
                     " and then on ", strong("Predict"),
-                    " in the left-hand panel to run an example.",
+                    " in the left-hand panel.",
                     style = 'color:white'),
                  h4("Now, you can click on the different tabs to explore your results.",
                     style = 'color:white')

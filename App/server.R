@@ -202,7 +202,7 @@ server <- function(input, output, session) {
       scale_shape_manual(values = c(15,17,0,2)) +
       xlab(paste0("PC1 (", explVar[1], "%)")) +
       ylab(paste0("PC2 (", explVar[2], "%)")) +
-      labs(title = "PCA Score Plot", 
+      labs(title = "PCA score plot of training data", 
            caption = "NOTE: The PCA model is constructed using the training data only. The test data is projected.",
            color = "Diagnosis",
            shape = "") +
@@ -274,7 +274,8 @@ server <- function(input, output, session) {
      colnames(observedValue) <-colnames(plotData)[1:4]
      
      scatter <- ggplot()+
-       geom_point(aes(x = plotData[,f1], y = plotData[,f2], shape = plotData$diagnosis, color = plotData$diagnosis), size = 2, alpha = 0.7) +
+       geom_point(aes(x = plotData[,f1], y = plotData[,f2], shape = plotData$diagnosis, 
+                      color = plotData$diagnosis, text = paste0("X: ", plotData[,f1], "\nY: ", plotData[,f2])), size = 2, alpha = 0.7) +
        geom_point(aes(x = observedValue[,f1], y = observedValue[,f2]), color = "red", size = 3, alpha = 1) +
        geom_text(aes(x = observedValue[,f1], y = observedValue[,f2]), label = "Observation", color = "white", size = 3.5) +
        scale_shape_manual(values = c(15,17,0,2)) +
@@ -283,6 +284,7 @@ server <- function(input, output, session) {
        labs(title = NULL,
             color = "Diagnosis",
             shape = "") +
+       ggtitle("Scatter plot of training data") +
        theme_classic() +
        theme(plot.title = element_text(hjust = 0.5,
                                        face = "bold",
@@ -306,7 +308,7 @@ server <- function(input, output, session) {
        )+
        scale_color_manual(values = c("#7EC8E3", "#E12A36"))
      
-     return(ggplotly(scatter, tooltip = c("x", "y")))
+     return(ggplotly(scatter, tooltip = c("text")))
 
    })
    
@@ -349,6 +351,7 @@ server <- function(input, output, session) {
        labs(title = NULL,
             fill = "Diagnosis",
             shape = "") +
+       ggtitle("Histogram of training data") +
        theme_classic() +
        theme(plot.title = element_text(hjust = 0.5,
                                        face = "bold",
