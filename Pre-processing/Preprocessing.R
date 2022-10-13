@@ -144,8 +144,6 @@ save(featureInfo, file = "featureInfo.RData")
 save(sampleInfo, file = "sampleInfo.RData")
 
 
-
-
 ################################################################################
 
 # 2. Data pre-processing
@@ -233,7 +231,7 @@ load("featureInfo.RData")
 load("sampleInfo.RData")
 
 # Perform log transformation (add 0.5 to avoid zero values)
-dataMatrix_log <- log(dataMatrix_imputed + 0.5)
+dataMatrix_log <- log(dataMatrix_imputed + 1)
 
 # Unit scale the data (mean = 0, sd = 0)
 dataMatrix_scaled <- t((t(dataMatrix_imputed) - rowMeans(t(dataMatrix_imputed)))/(apply(t(dataMatrix_imputed),1,sd)))
@@ -453,7 +451,7 @@ convergencePlot <- ggplot(sampleInfo,aes(AnomalyScore1000, AnomalyScore500)) +
 ggsave(plot = convergencePlot, filename = "convergencePlot.png", width = 10, height = 8)
 
 # select threshold for outliers
-anomalyThreshold <- 0.65 
+anomalyThreshold <- 0.652 
 
 # Make an histogram of the anomaly scores
 anomalyHistogram <- ggplot(sampleInfo, aes(AnomalyScore1000, fill = diagnosis)) + 

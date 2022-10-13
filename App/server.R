@@ -34,18 +34,15 @@ server <- function(input, output, session) {
     r <- sample(1:nrow(exampleData),1)
     
     # Update numeric input
-    updateNumericInput(session, "PerimeterWorst",
-                    label = NULL,
-                    value = round(exp(exampleData$perimeter_worst[r])-0.5,2))
-    updateNumericInput(session, "RadiusWorst",
+    updateNumericInput(session, "AreaWorst",
                        label = NULL,
-                       value = round(exp(exampleData$radius_worst[r])-0.5,2))
-    updateNumericInput(session, "ConcavePointsMean",
+                       value = round(exp(exampleData$area_worst[r])-1,2))
+    updateNumericInput(session, "ConcavePointsWorst",
                        label = NULL,
-                       value = round(exp(exampleData$concave_points_mean[r])-0.5,2))
+                       value = round(exp(exampleData$concave_points_worst[r])-1,2))
     updateNumericInput(session, "TextureWorst",
                        label = NULL,
-                       value = round(exp(exampleData$texture_worst[r])-0.5,2))
+                       value = round(exp(exampleData$texture_worst[r])-1,2))
 
   })
   
@@ -67,7 +64,7 @@ server <- function(input, output, session) {
     req(varSD())
     
     # log transform
-    values_log <- log(c(input$ConcavePointsMean, input$RadiusWorst, input$TextureWorst, input$PerimeterWorst)+0.5)
+    values_log <- log(c(input$TextureWorst, input$AreaWorst, input$ConcavePointsWorst)+1)
     
     #Scale data
     values_scaled <- (values_log - varMeans())/varSD()
@@ -237,10 +234,9 @@ server <- function(input, output, session) {
   #******************************************************************************#
   
   observedValue <- eventReactive(input$Predict,{
-    observedValue <- as.data.frame(t(as.data.frame(c(input$ConcavePointsMean, 
-                                    input$RadiusWorst, 
-                                    input$TextureWorst, 
-                                    input$PerimeterWorst))))
+    observedValue <- as.data.frame(t(as.data.frame(c(input$TextureWorst, 
+                                    input$AreaWorst, 
+                                    input$ConcavePointsWorst))))
     
     return(observedValue)
     
@@ -253,7 +249,7 @@ server <- function(input, output, session) {
      plotData <- trainingData[, colnames(trainingData) %in% colnames(trainingData_filtered)]
      
      # Reverse the log transformation
-     plotData <- exp(plotData) - 0.5
+     plotData <- exp(plotData) - 1
      
      # Add ID and diagnosis to data
      plotData$ID <- rownames(plotData)
@@ -261,17 +257,16 @@ server <- function(input, output, session) {
      
      
      # get selected feature
-     features <- c("Mean Concave Points",
-                   "Radius Worst",
-                   "Texture Worst",
-                   "Perimeter Worst")
+     features <- c("Texture Worst",
+                   "Area Worst",
+                   "Concave Points Worst")
      
      f1 <- which(features == input$Xaxis)
      f2 <- which(features == input$Yaxis)
      
      # Observed value
      observedValue <- observedValue()
-     colnames(observedValue) <-colnames(plotData)[1:4]
+     colnames(observedValue) <- colnames(plotData)[1:3]
      
      scatter <- ggplot()+
        geom_point(aes(x = plotData[,f1], y = plotData[,f2], shape = plotData$diagnosis, 
@@ -324,7 +319,7 @@ server <- function(input, output, session) {
      plotData <- trainingData[, colnames(trainingData) %in% colnames(trainingData_filtered)]
      
      # Reverse the log transformation
-     plotData <- exp(plotData) - 0.5
+     plotData <- exp(plotData) - 1
      
      # Add ID and diagnosis to data
      plotData$ID <- rownames(plotData)
@@ -332,16 +327,15 @@ server <- function(input, output, session) {
      
      
      # get selected feature
-     features <- c("Mean Concave Points",
-                   "Radius Worst",
-                   "Texture Worst",
-                   "Perimeter Worst")
+     features <- c("Texture Worst",
+                   "Area Worst",
+                   "Concave Points Worst")
      
      f1 <- which(features == input$feature)
      
      # Observed value
      observedValue <- observedValue()
-     colnames(observedValue) <-colnames(plotData)[1:4]
+     colnames(observedValue) <-colnames(plotData)[1:3]
      
      histPlot <- ggplot()+
        geom_histogram(aes(x = plotData[,f1], fill = plotData$diagnosis), bins = 100, position = "identity", alpha = 0.5) +

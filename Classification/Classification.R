@@ -352,7 +352,7 @@ plotMeanAccuracy <- data.frame(Accuracy = colMeans(modelInfo$accuracy),
 plotAccuracy <- inner_join(plotAccuracy, plotMeanAccuracy, by = c("nFeatures" = "nFeatures"))
 
 # Plot CV accuracy vs number of features in model
-n_features = 4
+n_features = 3
 accuracy_plot <- ggplot(plotAccuracy, aes(x = nFeatures, y = Accuracy.x, fill = Accuracy.y)) +
   geom_vline(xintercept = n_features, linetype = "dashed", color = "red", size = 1) +
   geom_text(aes(x = n_features + 6, y = 0.84), label = paste0("Number of Features: ", n_features,
@@ -377,8 +377,8 @@ ggsave(plot = accuracy_plot, filename = "accuracyPlot.png", width = 10, height =
 
 # Stability of coefficients
 
-# Exclude the 26 worst features: 
-# We saw that after removing more than 26 features the CV accuracy decreases
+# Exclude the 27 worst features: 
+# We saw that after removing more than 27 features the CV accuracy decreases
 # in the accuracyPlot.png image
 excludedFeatures <- modelInfo$removedFeature[1:(30 - n_features)]
 trainingData_filtered <- trainingData_scaled[,!(colnames(trainingData_scaled) %in% excludedFeatures)]
@@ -474,7 +474,7 @@ cm_test <- confusionMatrix(as.factor(pred_test), testClass)
 cm_test
 
 #=============================================================================#
-# 100 % accuracy on test data!!!!!!
+# 98 % accuracy on test data!!!!!!
 #=============================================================================#
 
 # Make a prediction on the training set
@@ -485,7 +485,7 @@ cm_train <- confusionMatrix(as.factor(pred_train), trainingClass)
 cm_train
 
 #=============================================================================#
-# 96 % accuracy on training data!!!!!!
+# 97 % accuracy on training data!!!!!!
 #=============================================================================#
 
 # Get class probability for each test sample
@@ -571,7 +571,7 @@ roc_training <- ggplot(plotROC_training, aes(x = 1-specificity, y = sensitivity)
   geom_area(data = data.frame(x = c(0,0.5,1), y = c(0,0.5,1)), aes(x = x, y = y), alpha = 0.5, fill= "#D95F02") +
   geom_abline(intercept = 0, slope = 1, size = 1.5, linetype = "dashed") +
   geom_text(x = 0.5, y = 0.8, label = paste0("AUC: ", round(auc(roc_list_training),2)), size = 6, color = "#D95F02") +
-  geom_point(data = plotROC_training[which(round(plotROC_training$threshold,1) == 0.5)[1],],  aes(x = 1-specificity, y = sensitivity), size = 4, color = "red") +
+  geom_point(data = plotROC_training[which.min(abs(plotROC_training$threshold - 0.5)),],  aes(x = 1-specificity, y = sensitivity), size = 4, color = "red") +
   xlab("1 - Specificity") +
   ylab("Sensitivity") +
   ggtitle("Training data") +
@@ -600,7 +600,7 @@ roc_test <- ggplot(plotROC_test, aes(x = 1-specificity, y = sensitivity)) +
   geom_area(data = data.frame(x = c(0,0.5,1), y = c(0,0.5,1)), aes(x = x, y = y), alpha = 0.5, fill= "#7570B3") +
   geom_abline(intercept = 0, slope = 1, size = 1.5, linetype = "dashed") +
   geom_text(x = 0.5, y = 0.8, label = paste0("AUC: ", round(auc(roc_list_test),2)), size = 6, color = "#7570B3") +
-  geom_point(data = plotROC_test[which(round(plotROC_test$threshold,1) == 0.5)[1],],  aes(x = 1-specificity, y = sensitivity), size = 4, color = "red") +
+  geom_point(data = plotROC_test[which.min(abs(plotROC_test$threshold - 0.5)),],  aes(x = 1-specificity, y = sensitivity), size = 4, color = "red") +
   xlab("1 - Specificity") +
   ylab("Sensitivity") +
   ggtitle("Test data") +
@@ -624,7 +624,71 @@ ggsave("rocPlot.png",
                     top = textGrob("ROC",gp=gpar(fontsize=20,font=2))), 
        width = 12, height = 6)
 
-  
+
+#******************************************************************************#
+# 3.3. Visualize in PCA plot
+#******************************************************************************#
+# Load data (if needed)
+load("trainingData.RData")
+load("trainingClass.RData")
+load("testData.RData")
+load("testClass.RData")
+
+
+# Unit scale the training Data
+trainingData_scaled <- t((t(trainingData) - rowMeans(t(trainingData)))/(apply(t(trainingData),1,sd)))
+
+# Make PCA model
+pcaList <-  prcomp(trainingData_scaled,        
+                   retx = TRUE,
+                   center = FALSE,
+                   scale = FALSE)
+
+# Get the PCA scores of the training data
+scores_train <- as.data.frame(pcaList$x)
+scores_train$ID <- rownames(scores_train)
+scores_train <- inner_join(scores_train, sampleInfo_filtered, by = c("ID" = "id"))
+
+# Calculate the explained variance of the PCs
+explVar <- round(((pcaList$sdev^2)/sum(pcaList$sdev^2))*100,2)
+
+# Scale test data (using the standard deviation and mean of the training data)
+testData_scaled <- t((t(testData) - rowMeans(t(trainingData)))/(apply(t(trainingData),1,sd)))
+
+# Calculate the scores of the test data
+scores_test <- as.data.frame(as.matrix(testData_scaled) %*% as.matrix(pcaList$rotation))
+scores_test$ID <- rownames(scores_test)
+scores_test <- inner_join(scores_test, sampleInfo_filtered, by = c("ID" = "id"))
+
+# Combine the scores of test and training data in a single data frame
+scores_all <- rbind.data.frame(scores_train, scores_test)
+scores_all$Train <- c(rep("Training", nrow(scores_train)), rep("Test", nrow(scores_test)))
+scores_all$Group <- paste0(scores_all$Train, ": ", scores_all$diagnosis)
+scores_all$ClassProbability <- c(pred_prob_train, pred_prob_test)
+
+# Plot the scores of the training data and the project scores of the test data 
+PCA_prob <- ggplot()+
+  geom_point(data = scores_all, aes(x = PC1, y = PC2, shape = Group, color = ClassProbability), size = 2, alpha = 0.9) +
+  scale_shape_manual(values = c(15,17,0,2)) +
+  scale_color_viridis_c() +
+  #scale_color_brewer(palette = "Dark2") +
+  xlab(paste0("PC1 (", explVar[1], "%)")) +
+  ylab(paste0("PC2 (", explVar[2], "%)")) +
+  labs(title = "PCA Score Plot", 
+       caption = "NOTE: The PCA model is constructed using the training data only. The test data is projected.",
+       color = "Class Probability",
+       shape = "") +
+  theme_classic() +
+  theme(legend.position = "right",
+        plot.title = element_text(hjust = 0.5,
+                                  face = "bold",
+                                  size = 16),
+        plot.caption = element_text(hjust = 0.5,
+                                    size = 10,
+                                    face = "italic"))
+
+# Save plot
+ggsave(PCA_prob, file = "PCA_Probability.png", width = 12, height = 8)
 
 ################################################################################
 

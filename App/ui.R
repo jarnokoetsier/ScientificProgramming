@@ -31,19 +31,14 @@ ui <- fluidPage(
       br(),
       br(),
       
-      # Perimeter Worst
-      numericInput(inputId = "PerimeterWorst", 
-                label = "Perimeter Worst", 
-                value = NULL),
-      
-      # Radius Worst
-      numericInput(inputId = "RadiusWorst", 
-                   label = "Radius Worst", 
+      # Area Worst
+      numericInput(inputId = "AreaWorst", 
+                   label = "Area Worst", 
                    value = NULL),
       
-      # Mean Concave Points
-      numericInput(inputId = "ConcavePointsMean", 
-                   label = "Mean Concave Points", 
+      #Concave Points Worst
+      numericInput(inputId = "ConcavePointsWorst", 
+                   label = "Concave Points Worst", 
                    value = NULL),
       
       # Texture Worst
@@ -108,21 +103,19 @@ ui <- fluidPage(
                    column(width = 3,
                           selectInput(inputId = "Xaxis", 
                                       label = tags$span(style="color: white;","x-axis"),
-                                      choices = c("Perimeter Worst",
-                                                  "Radius Worst",
-                                                  "Texture Worst",
-                                                  "Mean Concave Points"
+                                      choices = c("Texture Worst",
+                                                  "Area Worst",
+                                                  "Concave Points Worst"
                                       ),
-                                      selected = "Perimeter Worst",
+                                      selected = "Area Worst",
                                       multiple = FALSE)
                           ),
                    column(width = 3,
                           selectInput(inputId = "Yaxis", 
                                       label = tags$span(style="color: white;","y-axis"),
-                                      choices = c("Perimeter Worst",
-                                                  "Radius Worst",
-                                                  "Texture Worst",
-                                                  "Mean Concave Points"
+                                      choices = c("Texture Worst",
+                                                  "Area Worst",
+                                                  "Concave Points Worst"
                                       ),
                                       selected = "Texture Worst",
                                       multiple = FALSE),
@@ -144,10 +137,10 @@ ui <- fluidPage(
                  
                  selectInput(inputId = "feature", 
                              label = NULL,
-                             choices = c("Perimeter Worst",
-                                         "Radius Worst",
-                                         "Texture Worst",
-                                         "Mean Concave Points"),
+                             choices = c("Texture Worst",
+                                         "Area Worst",
+                                         "Concave Points Worst"
+                             ),
                              selected = "Perimeter Worst",
                              multiple = FALSE),
                  
