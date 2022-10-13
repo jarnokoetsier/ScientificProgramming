@@ -42,7 +42,7 @@ When performing the analysis, be aware of the following:
     * `Classification/Classification.R`
     * `Clustering/Clustering.R`
     * [App](#App)
-3. Finally, please follow the instructions in the scripts carefully to ensure a successfull analysis.
+3. Finally, please follow the instructions in the scripts carefully to ensure a successful analysis.
 
 ![Workflow](/Figures/Workflow.JPG?raw=true "Workflow")
 
