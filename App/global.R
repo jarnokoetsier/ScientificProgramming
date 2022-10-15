@@ -1,6 +1,6 @@
 #=============================================================================#
 # File: global.R
-# Date: October 5, 2022										                                      
+# Date: October 15, 2022										                                      
 # Author: Jarno Koetsier                                                      
 # Data: 'trainingData_filtered.RData', 'trainingData.RData', trainingClass.Rdata'
 # 'testData.RData', "finalModel.RData', 'sampleInfo_filtered.RData', and
@@ -20,14 +20,14 @@ if (!requireNamespace("devtools", quietly = TRUE))
 require(as.character("devtools"), character.only = TRUE)
 
 # Required packages
-CRANpackages <- c("tidyverse",
-                  "shiny",
-                  "shinyWidgets",
-                  "shinycssloaders",
-                  "shinythemes",
-                  "caret",
-                  "glmnet",
-                  "plotly")
+CRANpackages <- c("tidyverse",         # Data formatting and plotting
+                  "shiny",             # Make App
+                  "shinyWidgets",      # Widgets for app
+                  "shinycssloaders",   # Loading figure
+                  "shinythemes",       # Layout theme for app
+                  "caret",             # Machine learning workflow
+                  "glmnet",            # Elastic net
+                  "plotly")            # Interactive plots
 
 # Versions of required packages
 versions <- c("1.3.2",
