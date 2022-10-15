@@ -8,6 +8,7 @@
 # RStudio version: 2022.7.1.544 (RStudio.Version())
 #=============================================================================#
 
+# User interface
 ui <- fluidPage(
   theme = shinytheme("spacelab"),
   setBackgroundColor("#343434"),
