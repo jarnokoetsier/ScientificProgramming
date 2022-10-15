@@ -1,6 +1,6 @@
 #=============================================================================#
 # File: Clustering.R
-# Date: October 5, 2022										                                      
+# Date: October 15, 2022										                                      
 # Author: Jarno Koetsier                                                      
 # Data: 'dataMatrix_filtered.RData','featureInfo.Rdata','sampleInfo_filtered.RData'
 #
@@ -78,7 +78,7 @@ load(paste0(homeDir, "/Pre-processing/", "sampleInfo_filtered.RData"))
 all(sampleInfo_filtered$id == rownames(dataMatrix_filtered))
 dataMatrix_malignant <- dataMatrix_filtered[sampleInfo_filtered$diagnosis == "Malignant",]
 
-# Scale the data
+# Auto-scale the data ((x - mean)/sd)
 dataMatrix_malignant_scaled <- t((t(dataMatrix_malignant) - rowMeans(t(dataMatrix_malignant)))/(apply(t(dataMatrix_malignant),1,sd)))
 
 
@@ -113,9 +113,37 @@ for (var in 1:length(explVar)) {
     cumVar[var] <- explVar[1]
   }
 }
+# Combine (cumulative) explained variance in data frame for plotting
+plotVar <- data.frame(nPC = 1:length(explVar), explVar= explVar, cumVar = cumVar)
 
-# Get maximum number of PC's for which the cumulative explained variances is less than 95%
-nPCs <- max(which(cumVar < 95))
+# Make explained variance plot
+nPCs = 7
+explVarPlot <- ggplot(plotVar, aes(x = nPC)) +
+  geom_bar(aes(y = explVar, fill = explVar), stat = "identity", color = "black") +
+  geom_line(aes(y = cumVar/2.8, group = 1), size = 1, color = "grey") +
+  geom_point(aes(y = cumVar/2.8), size = 2) +
+  geom_vline(xintercept = nPCs, color = "red", linetype = "dashed") +
+  ggtitle("PCA Explained Variation") +
+  scale_y_continuous(
+    
+    # Features of the first axis
+    name = "Explained Variance (%)",
+    
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*2.8, name="Cumulative Explained Variance (%)")
+  ) + 
+  xlab("Principal Components") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5,
+                                  face = "bold",
+                                  size = 16),
+        legend.position = "none")
+
+# save plot
+ggsave(plot = explVarPlot, filename = "explVarPlot.png", width = 10, height = 8)
+
+# After the first 7 PCs, the explained variance flattens. So, we will use the
+# first 7 PCs for clustering
 
 # Get PCA scores
 PCA_scores <- as.data.frame(pcaList$x[,1:nPCs])
@@ -157,7 +185,6 @@ V(graph)$membership <- as.character(clusters)
 plotNetwork <- ggraph(graph, layout = "stress") +
   geom_edge_link(color = "lightgrey") +
   geom_node_point(aes(color = membership), size = 3) +
-  #geom_node_label(aes(label = name, fill = membership, size = 5)) +
   theme_void() +
   theme(legend.position = 'none') +
   scale_color_manual(values = c(brewer.pal(3, "Dark2"), "grey"))
@@ -293,12 +320,16 @@ explVarPCoA <- round(((pcoaList$sdev^2)/sum(pcoaList$sdev^2))*100,2)
 # Get PCoA scores
 plotPCoA_scores <- as.data.frame(pcoaList$x[,1:10])
 plotPCoA_scores$ID <- rownames(plotPCoA_scores)
+
+# Combine PCoA scores with sample information
 plotPCoA_scores <- inner_join(plotPCoA_scores, sampleInfo_filtered, by = c("ID" = "id"))
+
+# Combine PCoA scores with cluster information
 plotPCoA_scores <- inner_join(plotPCoA_scores, clusterDF, by = c("ID" = "ID"))
 
 # Make PCoA score plots:
 
-# Color by URF-based clusters
+# 1) Color by URF-based clusters
 PCoAurf <- ggplot(plotPCoA_scores, aes(x = PC1, y = PC2, color = Cluster_rf)) +
   geom_point(size = 2, alpha = 0.9) +
   xlab(paste0("PCo1 (", explVarPCoA[1],"%)")) +
@@ -314,7 +345,7 @@ PCoAurf <- ggplot(plotPCoA_scores, aes(x = PC1, y = PC2, color = Cluster_rf)) +
         legend.title = element_blank()) +
   scale_color_manual(values = c(brewer.pal(3, "Dark2")))
 
-# Color by network-based clusters
+# 2) Color by network-based clusters
 PCoAnetwork <- ggplot(plotPCoA_scores, aes(x = PC1, y = PC2, color = Cluster_Network)) +
   geom_point(size = 2, alpha = 0.9) +
   xlab(paste0("PCo1 (", explVarPCoA[1],"%)")) +
@@ -338,7 +369,6 @@ ggsave("PCoAplot.png",
                     nrow = 1,
                     top = textGrob("PCoA Plot",gp=gpar(fontsize=20,font=2))), 
        width = 12, height = 6)
-
 
 
 #******************************************************************************#
@@ -421,10 +451,10 @@ plotPCA_scores$combined[!(plotPCA_scores$combined%in% c("1/1", "2/3", "3/2"))] <
 
 # Get PCA projections of beneign samples:
 
-# 1) Get beneign samples
+# 1) Get benign samples
 dataMatrix_benign <- dataMatrix_filtered[!(rownames(dataMatrix_filtered) %in% rownames(dataMatrix_malignant)),]
 
-# 2) Scale beneign samples using the malignant samples
+# 2) Scale benign samples using the malignant samples
 benign_scaled <-  t((t(dataMatrix_benign) - rowMeans(t(dataMatrix_malignant)))/(apply(t(dataMatrix_malignant),1,sd)))
 
 # 3) Calculate the projections
@@ -486,7 +516,7 @@ ggsave("PCAplot2.png",
 
 ###############################################################################
 
-# Clustering evaluation
+# Cluster evaluation
 
 ###############################################################################
 
@@ -517,11 +547,11 @@ plotBenign$combined <- rep("Benign", nrow(plotBenign))
 plotAll <- rbind.data.frame(plotMalignant, plotBenign)
 
 # In the loading plot (PCAplot2.png), we saw that Mean Compactness and Mean Area 
-# might be able to distinguish between the clusters. So, let;s make a scatter 
+# might be able to distinguish between the clusters. So, let's make a scatter 
 # plot using these two variables
 scatterPlot <- ggplot() +
-  geom_point(data = plotAll[plotAll$combined == "Benign",], aes(x = exp(area_mean)-0.5, y = exp(compactness_mean)-0.5,  color = "Beneign"), size = 2, alpha = 0.7) +
-  geom_point(data = plotAll[plotAll$combined != "Benign",], aes(x = exp(area_mean)-0.5, y = exp(compactness_mean)-0.5, color = combined), size = 3, alpha = 1) +
+  geom_point(data = plotAll[plotAll$combined == "Benign",], aes(x = exp(area_mean)-1, y = exp(compactness_mean)-1,  color = "Beneign"), size = 2, alpha = 0.7) +
+  geom_point(data = plotAll[plotAll$combined != "Benign",], aes(x = exp(area_mean)-1, y = exp(compactness_mean)-1, color = combined), size = 3, alpha = 1) +
   labs(color = "Cluster\n(Network/URF)") +
   xlab("Mean Area") +
   ylab("Mean Compactness") +
@@ -532,7 +562,7 @@ scatterPlot <- ggplot() +
 ggsave(scatterPlot, file = "ScatterPlot.png", width = 10, height = 8)
 
 # Make box/violin plot of the Mean Area for the different clusters
-boxPlot_area <- ggplot(plotAll[plotAll$combined != "Other",], aes(x = combined, y = exp(area_mean)-0.5)) +
+boxPlot_area <- ggplot(plotAll[plotAll$combined != "Other",], aes(x = combined, y = exp(area_mean)-1)) +
   geom_violin(aes(fill = combined), alpha = 0.5) +
   geom_boxplot(width=0.1, fill="white")+
   geom_jitter(aes(color = combined),position=position_jitter(0.2)) +
@@ -550,7 +580,7 @@ boxPlot_area <- ggplot(plotAll[plotAll$combined != "Other",], aes(x = combined, 
   scale_fill_manual(values = c(brewer.pal(3, "Set1"), "grey"))
 
 # Make box/violin plot of the Mean Compactness for the different clusters
-boxPlot_compactness <- ggplot(plotAll[plotAll$combined != "Other",], aes(x = combined, y = exp(compactness_mean)-0.5)) +
+boxPlot_compactness <- ggplot(plotAll[plotAll$combined != "Other",], aes(x = combined, y = exp(compactness_mean)-1)) +
   geom_violin(aes(fill = combined), alpha = 0.5) +
   geom_boxplot(width=0.1, fill="white")+
   geom_jitter(aes(color = combined),position=position_jitter(0.2)) +
@@ -576,7 +606,10 @@ ggsave("clusterEvaluation.png",
                     nrow = 2), 
        width = 10, height = 10)
 
-
+#.............................................................................#
+# Mean Area and Mean compactness indeed seems to mostly explain the differences
+# between the three clusters!
+#.............................................................................#
 
 #******************************************************************************#
 # Link classification performance to clusters
@@ -625,14 +658,18 @@ ClusterProbabilities <- ggplot() +
   scale_fill_manual(values = c(brewer.pal(3, "Set1"))) +
   theme_classic()
 
+# NOTE: warning message can be safely ignored :)
+
 # Save plot
 ggsave(ClusterProbabilities, file = "ClusterProbabilities.png", width = 10, height = 8)
 
-
+#.............................................................................#
 # As we already saw in the PCA plot and scatter plot. The red cluster encompasses
-# more extreme malignant samples that can easily be distiguished from the beneign
+# more extreme malignant samples that can easily be distinguished from the benign
 # samples. In contrast, the blue and the green clusters are more closely related
-# to the beneign samples and are thus more difficult to predict.
+# to the benign samples and are thus more difficult to predict.
+#.............................................................................#
+
 ################################################################################
 
 # End of the script
