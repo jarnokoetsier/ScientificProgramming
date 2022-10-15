@@ -1,6 +1,6 @@
 #=============================================================================#
 # File: Classification.R
-# Date: October 5, 2022										                                      
+# Date: October 15, 2022										                                      
 # Author: Jarno Koetsier                                                      
 # Data: 'dataMatrix_filtered.RData','featureInfo.Rdata','sampleInfo_filtered.RData'
 #
@@ -225,7 +225,7 @@ load("testClass.RData")
 # model training
 source("MLfunction.R")
 
-# Scale the training data
+# Auto-scale the training data ((x - mean)/sd)
 trainingData_scaled <- t((t(trainingData) - rowMeans(t(trainingData)))/(apply(t(trainingData),1,sd)))
 
 # Perform grid search for the following alpha values:
@@ -634,8 +634,7 @@ load("trainingClass.RData")
 load("testData.RData")
 load("testClass.RData")
 
-
-# Unit scale the training Data
+# Auto-scale the training Data
 trainingData_scaled <- t((t(trainingData) - rowMeans(t(trainingData)))/(apply(t(trainingData),1,sd)))
 
 # Make PCA model
@@ -671,7 +670,6 @@ PCA_prob <- ggplot()+
   geom_point(data = scores_all, aes(x = PC1, y = PC2, shape = Group, color = ClassProbability), size = 2, alpha = 0.9) +
   scale_shape_manual(values = c(15,17,0,2)) +
   scale_color_viridis_c() +
-  #scale_color_brewer(palette = "Dark2") +
   xlab(paste0("PC1 (", explVar[1], "%)")) +
   ylab(paste0("PC2 (", explVar[2], "%)")) +
   labs(title = "PCA Score Plot", 
