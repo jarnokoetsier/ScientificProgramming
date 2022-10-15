@@ -1,14 +1,12 @@
-
 #=============================================================================#
 # File: Preprocessing.R
-# Date: October 5, 2022										                                      
+# Date: October 15, 2022										                                      
 # Author: Jarno Koetsier                                                      
 # Data: 'Data.xlsx' 
 #
 # R version: 4.2.1 (getRversion())
 # RStudio version: 2022.7.1.544 (RStudio.Version())
 #=============================================================================#
-
 
 
 ###############################################################################
@@ -186,7 +184,7 @@ load("dataMatrix_imputed.RData")
 load("featureInfo.RData")
 load("sampleInfo.RData")
 
-# Unit scale the data (mean = 0, sd = 0)
+# Auto-scale the data ((x - mean)/sd)
 dataMatrix_scaled <- t((t(dataMatrix_imputed) - rowMeans(t(dataMatrix_imputed)))/(apply(t(dataMatrix_imputed),1,sd)))
 
 # Prepare data for plotting
@@ -198,12 +196,12 @@ imputedValues <- gather(data.frame(dataMatrix_scaled[which(is.na(dataMatrix))]))
 imputedValues$key <- colnames(dataMatrix)[which(is.na(dataMatrix), arr.ind = TRUE)[,2]]
 imputedValues <- inner_join(imputedValues, featureInfo, by = c("key" = "Name"))
 
-# Make boxplots
+# Make violin plots
 knnPlot <- ggplot(plotData, aes(x = Name1, y = value, fill = Statistic)) +
-  geom_boxplot() +
+  geom_violin() +
   geom_point(data = imputedValues, aes(x = Name1, y = value), color = "red", shape = 18, size = 3) +
   xlab(NULL) +
-  ylab("Unit scaled value") +
+  ylab("Auto-scaled Value") +
   labs(title = "kNN imputation", 
        caption = "NOTE: The imputed values are indicated by the red dots.") +
   theme_classic() +
@@ -230,10 +228,10 @@ load("dataMatrix_imputed.RData")
 load("featureInfo.RData")
 load("sampleInfo.RData")
 
-# Perform log transformation (add 0.5 to avoid zero values)
+# Perform log transformation (add 1 to avoid zero values)
 dataMatrix_log <- log(dataMatrix_imputed + 1)
 
-# Unit scale the data (mean = 0, sd = 0)
+# Auto-scale the data ((x - mean)/sd)
 dataMatrix_scaled <- t((t(dataMatrix_imputed) - rowMeans(t(dataMatrix_imputed)))/(apply(t(dataMatrix_imputed),1,sd)))
 dataMatrix_log_scaled <- t((t(dataMatrix_log) - rowMeans(t(dataMatrix_log)))/(apply(t(dataMatrix_log),1,sd)))
 
@@ -242,14 +240,19 @@ dataMatrix_log_scaled <- t((t(dataMatrix_log) - rowMeans(t(dataMatrix_log)))/(ap
 # 1) Ridge plot
 #==============================================================================#
 
-# Prepare data for plotting
+# Prepare data for plotting:
+
+# 1) non-transformed data
 plotData <- gather(data.frame(dataMatrix_scaled))
 plotData <- inner_join(plotData, featureInfo, by = c("key" = "Name"))
 
+#2) log-transformed data
 plotData_log <- gather(data.frame(dataMatrix_log_scaled))
 plotData_log <- inner_join(plotData_log, featureInfo, by = c("key" = "Name"))
 
-# Ridge plot
+# Ridge plot:
+
+# 1) non-transformed data
 ridgePlot <- ggplot(plotData, aes(x = value, y = Feature, fill = Feature)) +
   geom_density_ridges(scale = 2, rel_min_height = 0.01) +
   xlab("Unit scaled value") +
@@ -263,6 +266,7 @@ ridgePlot <- ggplot(plotData, aes(x = value, y = Feature, fill = Feature)) +
                                   size = 16)) + 
   facet_wrap(~Statistic, ncol = 3)
 
+#2) log-transformed data
 ridgePlot_log <- ggplot(plotData_log, aes(x = value, y = Feature, fill = Feature)) +
   geom_density_ridges(scale = 2, rel_min_height = 0.01) +
   xlab("Unit scaled value") +
@@ -276,7 +280,7 @@ ridgePlot_log <- ggplot(plotData_log, aes(x = value, y = Feature, fill = Feature
                                   size = 16)) + 
   facet_wrap(~Statistic, ncol = 3)
 
-# Save ridge plots
+# Save ridge plots into a single image
 ggsave("ridgePlot.png", 
        grid.arrange(ridgePlot, 
                     ridgePlot_log, 
@@ -292,33 +296,36 @@ ggsave("ridgePlot.png",
 
 # Construct a PCA model using the filtered data
 
-#No transformation:
+#1) Non-transformed data
 pcaList <-  prcomp(dataMatrix_scaled,        
                    retx = TRUE,
                    center = FALSE,
                    scale = FALSE)
-#Log transformation:
+
+#2) Log-transformed data
 pcaList_log <-  prcomp(dataMatrix_log_scaled,        
                    retx = TRUE,
                    center = FALSE,
                    scale = FALSE)
 
 
-# Explained variance
+# Calculate explained variance:
 
-#No transformation:
+#1) Non-transformed data
 explVar <- round(((pcaList$sdev^2)/sum(pcaList$sdev^2))*100,2)
-#Log transformation:
+
+#2) Log-transformed data
 explVar_log <- round(((pcaList_log$sdev^2)/sum(pcaList_log$sdev^2))*100,2)
 
 
-# Retrieve scores from pcaList object
+# Retrieve scores from pcaList object:
 
-#No transformation:
+#1) Non-transformed data
 PCAscores <- as.data.frame(pcaList$x)
 PCAscores$ID <- rownames(PCAscores)
 PCAscores <- inner_join(PCAscores, sampleInfo, by = c("ID" = "id"))
-#Log transformation:
+
+#2) Log-transformed data
 PCAscores_log <- as.data.frame(pcaList_log$x)
 PCAscores_log$ID <- rownames(PCAscores_log)
 PCAscores_log <- inner_join(PCAscores_log, sampleInfo, by = c("ID" = "id"))
@@ -326,7 +333,7 @@ PCAscores_log <- inner_join(PCAscores_log, sampleInfo, by = c("ID" = "id"))
 
 # Make PCA score plot
 
-#No transformation:
+#1) Non-transformed data
 scorePlot <- ggplot(data = PCAscores, aes(x = PC1, y = PC2, color = diagnosis)) +
   geom_point(alpha = 0.9, size = 2) +
   ggtitle(label = "No Transformation") +
@@ -345,7 +352,7 @@ scorePlot <- ggplot(data = PCAscores, aes(x = PC1, y = PC2, color = diagnosis)) 
   scale_fill_manual(breaks = c("Malignant", "Benign"),
                     values=c("#D61C4E", "#293462"))
 
-#Log transformation:
+#2) Log-transformed data
 scorePlot_log <- ggplot(data = PCAscores_log, aes(x = PC1, y = PC2, color = diagnosis)) +
   geom_point(alpha = 0.9, size = 2) +
   ggtitle(label = "Log Transformation") +
@@ -365,7 +372,7 @@ scorePlot_log <- ggplot(data = PCAscores_log, aes(x = PC1, y = PC2, color = diag
                     values=c("#D61C4E", "#293462"))
 
 
-# Save plots
+# Save plots into a single image
 ggsave("PCA_ScorePlot_Transformation.png", 
        grid.arrange(scorePlot, 
                     scorePlot_log, 
@@ -381,7 +388,7 @@ ggsave("PCA_ScorePlot_Transformation.png",
 # for now.
 #.............................................................................#
 
-# Save log-tranformed data
+# Save log-transformed data
 save(dataMatrix_log, file = "dataMatrix_log.RData")
 
 
@@ -481,16 +488,16 @@ ggsave(plot = anomalyHistogram, filename = "anomalyHistogram.png", width = 10, h
 # 2) PCA-based outlier detection
 #==============================================================================#
 
-# Unit scale the data (mean = 0, sd = 0)
+# Auto-scale the data ((x - mean)/sd)
 dataMatrix_log_scaled <- t((t(dataMatrix_log) - rowMeans(t(dataMatrix_log)))/(apply(t(dataMatrix_log),1,sd)))
 
-# Construct a PCA model using the filtered data
+# Construct a PCA model using the auto-scaled data
 pcaList <-  prcomp(dataMatrix_log_scaled,        
                    retx = TRUE,
                    center = FALSE,
                    scale = FALSE)
 
-# Explained variance
+# Calculate the explained variances
 explVar <- round(((pcaList$sdev^2)/sum(pcaList$sdev^2))*100,2)
 
 # Retrieve scores from pcaList object
@@ -498,23 +505,23 @@ PCAscores <- as.data.frame(pcaList$x)
 PCAscores$ID <- rownames(PCAscores)
 PCAscores <- inner_join(PCAscores, sampleInfo, by = c("ID" = "id"))
 
-# Make PCA score plot
+# Make PCA score plot:
 
 # 1) colored by anomaly score
-PCA_ScorePlot_Outliers1 <- ggplot(data = PCAscores, aes(x = PC1, y = PC2, color = AnomalyScore500)) +
+PCA_ScorePlot_Outliers1 <- ggplot(data = PCAscores, aes(x = PC1, y = PC2, color = AnomalyScore1000)) +
   geom_point(alpha = 0.9, size = 2) +
   geom_point(data = PCAscores[PCAscores$AnomalyScore1000 > anomalyThreshold,], aes(x = PC1, y = PC2), shape = 1, size = 5, color = "red") +
   ggtitle(label = "Anomaly Score") +
   xlab(paste0("PC1 (", explVar[1],"%)")) +
   ylab(paste0("PC2 (", explVar[2],"%)")) +
+  labs(color = "Anomaly\nScore") +
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5,
                                   face = "bold",
                                   size = 14),
         plot.subtitle = element_text(hjust = 0.5,
                                      size = 10),
-        legend.position = "right",
-        legend.title = element_blank()) +
+        legend.position = "right") +
   scale_color_viridis_c()
 
 # 2) colored by diagnosis
@@ -535,6 +542,7 @@ PCA_ScorePlot_Outliers2 <- ggplot(data = PCAscores, aes(x = PC1, y = PC2, color 
   scale_color_manual(breaks = c("Malignant", "Benign"),
                      values=c("#D61C4E", "#293462"))
 
+# Save plots into single image
 ggsave("PCA_ScorePlot_Outliers.png", 
        grid.arrange(PCA_ScorePlot_Outliers1, 
                     PCA_ScorePlot_Outliers2, 
@@ -556,7 +564,7 @@ coVar <- cov(PCAscores[,1:2])
 center <- colMeans(PCAscores[,1:2])
 mahalanobisDist <- mahalanobis(as.matrix(PCAscores[,1:2]), center = center, cov = coVar)
 
-# Save distance metrics into dataframe
+# Save distance metrics into a data frame
 distanceDF <- data.frame(OD = ortDist,
                          MD = mahalanobisDist,
                          AnomalyScore = PCAscores$AnomalyScore1000,
@@ -645,6 +653,7 @@ ggsave("Distance-DistancePlot.png",
 
 
 # Filter data matrix for outliers
+all(names(anomalyScore_1000) == rownames(dataMatrix_log))
 dataMatrix_filtered <- dataMatrix_log[anomalyScore_1000 < anomalyThreshold,]
 
 # Save data matrix
@@ -656,6 +665,13 @@ sampleInfo_filtered <- sampleInfo[sampleInfo$id %in% rownames(dataMatrix_filtere
 # Save sample information
 save(sampleInfo_filtered, file = "sampleInfo_filtered.RData")
 
+#.............................................................................#
+# OPTIONAL: You can repeat the outlier detection with the dataMatrix_filtered
+# object again to see whether the removal of the outlier makes other outliers
+# visible. If you do this, you will see that after the removal of the outlier 
+# the anomaly histogram, the PCA score plot, and the distance-distance plot 
+# look acceptable. So, no additional outliers need to be removed.
+#.............................................................................#
 
 ################################################################################
 
