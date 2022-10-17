@@ -64,7 +64,7 @@ runApp(..PATH../ScientificProgramming/App)
 ```
  ### Now you can use the classification model to predict the class of new samples!
  
-![App Demo](/Figures/AppDemo1.gif?raw=true "App Demo")
+![App Demo](/Figures/AppDemo2.gif?raw=true "App Demo")
 
 
 ## Contact
