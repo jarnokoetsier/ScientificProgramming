@@ -31,6 +31,15 @@ ui <- fluidPage(
 
       br(),
       br(),
+      # Area SE
+      numericInput(inputId = "AreaSE", 
+                   label = "Area SE", 
+                   value = NULL),
+      
+      # Texture Worst
+      numericInput(inputId = "TextureWorst", 
+                   label = "Texture Worst", 
+                   value = NULL),
       
       # Area Worst
       numericInput(inputId = "AreaWorst", 
@@ -40,11 +49,6 @@ ui <- fluidPage(
       #Concave Points Worst
       numericInput(inputId = "ConcavePointsWorst", 
                    label = "Concave Points Worst", 
-                   value = NULL),
-      
-      # Texture Worst
-      numericInput(inputId = "TextureWorst", 
-                   label = "Texture Worst", 
                    value = NULL),
       
       # Predict
@@ -104,7 +108,8 @@ ui <- fluidPage(
                    column(width = 3,
                           selectInput(inputId = "Xaxis", 
                                       label = tags$span(style="color: white;","x-axis"),
-                                      choices = c("Texture Worst",
+                                      choices = c("Area SE",
+                                                  "Texture Worst",
                                                   "Area Worst",
                                                   "Concave Points Worst"
                                       ),
@@ -114,7 +119,8 @@ ui <- fluidPage(
                    column(width = 3,
                           selectInput(inputId = "Yaxis", 
                                       label = tags$span(style="color: white;","y-axis"),
-                                      choices = c("Texture Worst",
+                                      choices = c("Area SE",
+                                                  "Texture Worst",
                                                   "Area Worst",
                                                   "Concave Points Worst"
                                       ),
@@ -138,7 +144,8 @@ ui <- fluidPage(
                  
                  selectInput(inputId = "feature", 
                              label = NULL,
-                             choices = c("Texture Worst",
+                             choices = c("Area SE",
+                                         "Texture Worst",
                                          "Area Worst",
                                          "Concave Points Worst"
                              ),

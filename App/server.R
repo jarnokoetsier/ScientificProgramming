@@ -35,15 +35,18 @@ server <- function(input, output, session) {
     r <- sample(1:nrow(exampleData),1)
     
     # Update numeric input
+    updateNumericInput(session, "AreaSE",
+                       label = NULL,
+                       value = round(exp(exampleData$area_se[r])-1,2))
+    updateNumericInput(session, "TextureWorst",
+                       label = NULL,
+                       value = round(exp(exampleData$texture_worst[r])-1,2))
     updateNumericInput(session, "AreaWorst",
                        label = NULL,
                        value = round(exp(exampleData$area_worst[r])-1,2))
     updateNumericInput(session, "ConcavePointsWorst",
                        label = NULL,
                        value = round(exp(exampleData$concave_points_worst[r])-1,2))
-    updateNumericInput(session, "TextureWorst",
-                       label = NULL,
-                       value = round(exp(exampleData$texture_worst[r])-1,2))
 
   })
   
@@ -65,7 +68,7 @@ server <- function(input, output, session) {
     req(varSD())
     
     # log transform
-    values_log <- log(c(input$TextureWorst, input$AreaWorst, input$ConcavePointsWorst)+1)
+    values_log <- log(c(input$AreaSE, input$TextureWorst, input$AreaWorst, input$ConcavePointsWorst)+1)
     
     #Scale data
     values_scaled <- (values_log - varMeans())/varSD()
@@ -235,9 +238,10 @@ server <- function(input, output, session) {
   #******************************************************************************#
   
   observedValue <- eventReactive(input$Predict,{
-    observedValue <- as.data.frame(t(as.data.frame(c(input$TextureWorst, 
-                                    input$AreaWorst, 
-                                    input$ConcavePointsWorst))))
+    observedValue <- as.data.frame(t(as.data.frame(c(input$AreaSE,
+                                                     input$TextureWorst, 
+                                                     input$AreaWorst, 
+                                                     input$ConcavePointsWorst))))
     
     return(observedValue)
     
@@ -258,7 +262,8 @@ server <- function(input, output, session) {
      
      
      # get selected feature
-     features <- c("Texture Worst",
+     features <- c("Area SE",
+                   "Texture Worst",
                    "Area Worst",
                    "Concave Points Worst")
      
@@ -328,7 +333,8 @@ server <- function(input, output, session) {
      
      
      # get selected feature
-     features <- c("Texture Worst",
+     features <- c("Area SE",
+                   "Texture Worst",
                    "Area Worst",
                    "Concave Points Worst")
      

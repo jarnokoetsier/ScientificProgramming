@@ -304,10 +304,10 @@ heatmaply(
 
 # PCoA is done by performing PCA on the dissimilarity matrix
 
-# Center data
+# Center data (double mean centering)
 diss_centered <- diss - rowMeans(diss) - colMeans(diss) + mean(diss)
 
-# Peform pca
+# Perform PCA
 pcoaList <-  prcomp(diss_centered,        
                     retx = TRUE,
                     center = FALSE,

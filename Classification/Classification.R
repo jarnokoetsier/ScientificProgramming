@@ -214,6 +214,8 @@ save(testClass, file = "testClass.RData")
 # 2. Construct classification models
 
 ################################################################################
+# NOTE: running this section does require a reasonable amount of computational
+# time (approx. 17 min in my case).
 
 # Load data (if needed)
 load("trainingData.RData")
@@ -352,17 +354,17 @@ plotMeanAccuracy <- data.frame(Accuracy = colMeans(modelInfo$accuracy),
 plotAccuracy <- inner_join(plotAccuracy, plotMeanAccuracy, by = c("nFeatures" = "nFeatures"))
 
 # Plot CV accuracy vs number of features in model
-n_features = 3
+n_features = 4
 accuracy_plot <- ggplot(plotAccuracy, aes(x = nFeatures, y = Accuracy.x, fill = Accuracy.y)) +
   geom_vline(xintercept = n_features, linetype = "dashed", color = "red", size = 1) +
-  geom_text(aes(x = n_features + 6, y = 0.84), label = paste0("Number of Features: ", n_features,
+  geom_text(aes(x = n_features + 6, y = 0.87), label = paste0("Number of Features: ", n_features,
                                                  "\nAlpha: ", modelInfo$bestAlpha[31 - n_features],
                                                  "\nLambda: ", round(modelInfo$bestLambda[31 - n_features],3)), color = "red") +
   geom_boxplot(aes(group = nFeatures), alpha = 0.5) +
   geom_jitter(aes(group = nFeatures, color = Accuracy.y)) +
   xlab("Number of features") +
-  ylab("CV accuracy") +
-  labs(fill = "Mean accuracy", color = "Mean accuracy") +
+  ylab("CV balanced accuracy") +
+  labs(fill = "Mean balanced\naccuracy", color = "Mean balanced\naccuracy") +
   theme_classic() +
   scale_fill_viridis_c() +
   scale_color_viridis_c()
@@ -377,8 +379,8 @@ ggsave(plot = accuracy_plot, filename = "accuracyPlot.png", width = 10, height =
 
 # Stability of coefficients
 
-# Exclude the 27 worst features: 
-# We saw that after removing more than 27 features the CV accuracy decreases
+# Exclude the 26 worst features: 
+# We saw that after removing more than 26 features the CV accuracy decreases
 # in the accuracyPlot.png image
 excludedFeatures <- modelInfo$removedFeature[1:(30 - n_features)]
 trainingData_filtered <- trainingData_scaled[,!(colnames(trainingData_scaled) %in% excludedFeatures)]

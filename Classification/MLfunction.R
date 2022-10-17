@@ -8,7 +8,6 @@
 # RStudio version: 2022.7.1.544 (RStudio.Version())
 #=============================================================================#
 
-
 ################################################################################
 
 # logisticRegression_par() [logistic regression with parallel computing]
@@ -33,46 +32,49 @@ logisticRegression_par <- function(trainingData, trainingClass, nfold, nrep, alp
     # For each repeat.....
     for(r in 1:nrep){
       
-      # Combine class and data into single data frame
-      trainingData_combined <- cbind.data.frame(trainingData, trainingClass)
-      
-      # Use ADASYN algorithm to create synthetic data samples to deal with
-      # class imbalance:
-      ada_train <- AdasynClassif(trainingClass ~ ., dat = trainingData_combined)
-      trainingData1 <- as.matrix(ada_train[,1:(ncol(ada_train)-1)])
-      trainingClass1 <- ada_train[,ncol(ada_train)]
-      
-      # Create folds (seperate for beneign and malignant to ensure an even distribution among the folds)
-      fold_B <- createFolds(which(trainingClass1 == "Benign"), k = nfold)
-      fold_M <- createFolds(which(trainingClass1 == "Malignant"), k = nfold)
-      
+      # Create folds (seperate for benign and malignant to ensure an even distribution among the folds)
+      fold_B <- createFolds(which(trainingClass == "Benign"), k = nfold)
+      fold_M <- createFolds(which(trainingClass == "Malignant"), k = nfold)
       
       for (i in 1:nfold){
         count = count + 1
         
         # Get folds
-        folds <- c(which(trainingClass1 == "Benign")[fold_B[[i]]], 
-                   which(trainingClass1 == "Malignant")[fold_M[[i]]])
+        folds <- c(which(trainingClass == "Benign")[fold_B[[i]]], 
+                   which(trainingClass == "Malignant")[fold_M[[i]]])
         
-        #split training data in training and validation set
-        X_train <- trainingData1[-folds,]
-        C_train <- trainingClass1[-folds]
+        # Split training data in training and validation set
+        X_train <- as.matrix(trainingData[-folds,])
+        C_train <- trainingClass[-folds]
         
-        X_val <- trainingData1[folds,]
-        C_val <- trainingClass1[folds]
+        X_val <- as.matrix(trainingData[folds,])
+        C_val <- trainingClass[folds]
+        
+        # Combine training class and data into single data frame
+        X_train_combined <- cbind.data.frame(X_train, C_train)
+        
+        # Use ADASYN algorithm to create synthetic training data samples to deal 
+        # with class imbalance:
+        ada_train <- AdasynClassif(C_train ~ ., dat = X_train_combined)
+        X_train1 <- as.matrix(ada_train[,1:(ncol(ada_train)-1)])
+        C_train1 <- ada_train[,ncol(ada_train)]
         
         # Fit model
-        en_model_cv <- glmnet(x = X_train, 
-                              y = C_train, 
+        en_model_cv <- glmnet(x = X_train1, 
+                              y = C_train1, 
                               alpha = alpha, 
                               lambda = lambda,
                               family = "binomial",
                               standardize = FALSE)
         
-        # Evaluate model
+        # Get prediction for validation data
         pred <- predict(en_model_cv, X_val, type="class")
         pred <- factor(pred[,1], levels = levels(C_val))
-        accuracy[count] <- sum(pred == C_val)/length(C_val)
+        
+        # Use balanced accuracy to evaluate model
+        cm <- confusionMatrix(pred, C_val)
+        accuracy[count] <- cm$byClass['Balanced Accuracy']
+        #accuracy[count] <- sum(pred == C_val)/length(C_val)
         
         # Variable importance
         coeffs[,count] <- coef(en_model_cv)[-1,1]
@@ -113,6 +115,9 @@ logisticRegression_par <- function(trainingData, trainingClass, nfold, nrep, alp
 }
 
 
+
+
+
 ################################################################################
 
 # logisticRegression() [logistic regression without parallel computing]
@@ -138,46 +143,49 @@ logisticRegression <- function(trainingData, trainingClass, nfold, nrep, alpha, 
     # For each repeat.....
     for(r in 1:nrep){
       
-      # Combine class and data into single data frame
-      trainingData_combined <- cbind.data.frame(trainingData, trainingClass)
-      
-      # Use ADASYN algorithm to create synthetic data samples to deal with
-      # class imbalance:
-      ada_train <- AdasynClassif(trainingClass ~ ., dat = trainingData_combined)
-      trainingData1 <- as.matrix(ada_train[,1:(ncol(ada_train)-1)])
-      trainingClass1 <- ada_train[,ncol(ada_train)]
-      
-      # Create folds (seperate for beneign and malignant to ensure an even distribution among the folds)
-      fold_B <- createFolds(which(trainingClass1 == "Benign"), k = nfold)
-      fold_M <- createFolds(which(trainingClass1 == "Malignant"), k = nfold)
-      
+      # Create folds (seperate for benign and malignant to ensure an even distribution among the folds)
+      fold_B <- createFolds(which(trainingClass == "Benign"), k = nfold)
+      fold_M <- createFolds(which(trainingClass == "Malignant"), k = nfold)
       
       for (i in 1:nfold){
         count = count + 1
         
         # Get folds
-        folds <- c(which(trainingClass1 == "Benign")[fold_B[[i]]], 
-                   which(trainingClass1 == "Malignant")[fold_M[[i]]])
+        folds <- c(which(trainingClass == "Benign")[fold_B[[i]]], 
+                   which(trainingClass == "Malignant")[fold_M[[i]]])
         
-        #split training data in training and validation set
-        X_train <- trainingData1[-folds,]
-        C_train <- trainingClass1[-folds]
+        # Split training data in training and validation set
+        X_train <- as.matrix(trainingData[-folds,])
+        C_train <- trainingClass[-folds]
         
-        X_val <- trainingData1[folds,]
-        C_val <- trainingClass1[folds]
+        X_val <- as.matrix(trainingData[folds,])
+        C_val <- trainingClass[folds]
+        
+        # Combine training class and data into single data frame
+        X_train_combined <- cbind.data.frame(X_train, C_train)
+        
+        # Use ADASYN algorithm to create synthetic training data samples to deal 
+        # with class imbalance:
+        ada_train <- AdasynClassif(C_train ~ ., dat = X_train_combined)
+        X_train1 <- as.matrix(ada_train[,1:(ncol(ada_train)-1)])
+        C_train1 <- ada_train[,ncol(ada_train)]
         
         # Fit model
-        en_model_cv <- glmnet(x = X_train, 
-                              y = C_train, 
+        en_model_cv <- glmnet(x = X_train1, 
+                              y = C_train1, 
                               alpha = alpha, 
                               lambda = lambda,
                               family = "binomial",
                               standardize = FALSE)
         
-        # Evaluate model
+        # Get prediction
         pred <- predict(en_model_cv, X_val, type="class")
         pred <- factor(pred[,1], levels = levels(C_val))
-        accuracy[count] <- sum(pred == C_val)/length(C_val)
+        
+        # Use balanced accuracy to evaluate model
+        cm <- confusionMatrix(pred, C_val)
+        accuracy[count] <- cm$byClass['Balanced Accuracy']
+        #accuracy[count] <- sum(pred == C_val)/length(C_val)
         
         # Variable importance
         coeffs[,count] <- coef(en_model_cv)[-1,1]
