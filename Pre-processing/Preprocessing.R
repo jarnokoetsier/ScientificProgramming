@@ -731,7 +731,7 @@ save(sampleInfo_filtered, file = "sampleInfo_filtered.RData")
 
 # Load data (if needed)
 load("dataMatrix_filtered.RData")
-load("featureInfo.RData")
+load("sampleInfo_filtered.RData")
 
 # Auto-scale the data ((x - mean)/sd)
 dataMatrix_filtered_scaled <- t((t(dataMatrix_filtered) - rowMeans(t(dataMatrix_filtered)))/(apply(t(dataMatrix_filtered),1,sd)))
@@ -753,7 +753,6 @@ PCAscores <- inner_join(PCAscores, sampleInfo_filtered, by = c("ID" = "id"))
 # Make PCA score plot:
 PCA_ScorePlot_final <- ggplot(data = PCAscores, aes(x = PC1, y = PC2, color = diagnosis)) +
   geom_point(alpha = 0.9, size = 2) +
-  geom_point(data = PCAscores[PCAscores$AnomalyScore1000 > anomalyThreshold,], aes(x = PC1, y = PC2), shape = 1, size = 5, color = "red") +
   xlab(paste0("PC1 (", explVar[1],"%)")) +
   ylab(paste0("PC2 (", explVar[2],"%)")) +
   theme_classic() +
@@ -768,7 +767,7 @@ PCA_ScorePlot_final <- ggplot(data = PCAscores, aes(x = PC1, y = PC2, color = di
                      values=c("#D61C4E", "#293462"))
 
 # Save PCA score plot
-ggsave(plot = PCA_ScorePlot_final, filename = "PCA_ScorePlot_final.png", width = 10, height = 8)
+ggsave(plot = PCA_ScorePlot_final, filename = "PCA_ScorePlot_final.png", width = 8, height = 6)
 
 
 # Get cumulative explained variances
