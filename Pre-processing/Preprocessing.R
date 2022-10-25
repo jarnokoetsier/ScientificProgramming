@@ -1,6 +1,6 @@
 #=============================================================================#
 # File: Preprocessing.R
-# Date: October 15, 2022										                                      
+# Date: October 25, 2022										                                      
 # Author: Jarno Koetsier                                                      
 # Data: 'Data.xlsx' 
 #
@@ -8,6 +8,8 @@
 # RStudio version: 2022.7.1.544 (RStudio.Version())
 #=============================================================================#
 
+# DISCLAIMER: The code has been developed using R version 4.2.1. Code 
+# functionality for other R versions can not be guaranteed. 
 
 ###############################################################################
 
@@ -40,7 +42,8 @@ CRANpackages <- c("tidyverse",     # Data formatting and plotting
                   "isotree",       # Isolation forest
                   "gridExtra",     # Combine multiple plots into single image
                   "grid",          # Add objects to combined plots
-                  "ggrepel")       # Add labels in plot 
+                  "ggrepel",       # Add labels in plot
+                  "heatmaply")     # Make heatmaps 
 
 # Versions of required packages
 versions <- c("1.3.2",
@@ -49,43 +52,59 @@ versions <- c("1.3.2",
               "0.5.4",
               "0.5.17",
               "2.3",
-              "4.2.1",
-              "0.9.1")
-
+              NA,         # version of grid package depends on the R version
+              "0.9.1",
+              "1.3.0")
 
 # Install (if not yet installed) and load the required CRAN packages:
 for (pkg in 1:length(CRANpackages)) {
+  # If version is available, install correct version
+  if (!is.na(versions[pkg])){
+    # Install package if not installed yet
+    if (!requireNamespace(CRANpackages[pkg], quietly = TRUE)){
+      install_version(CRANpackages[pkg], version = versions[pkg], 
+                      repos = "http://cran.us.r-project.org")
+    }
+    # Install package if correct version is not installed yet
+    if (packageVersion(CRANpackages[pkg]) != versions[pkg]){
+      install_version(CRANpackages[pkg], version = versions[pkg], 
+                      repos = "http://cran.us.r-project.org")
+    }
+  }
+  # If version is not available, install latest version
+  if (is.na(versions[pkg])){
+    # Install package if not installed yet
+    if (!requireNamespace(CRANpackages[pkg], quietly = TRUE)){
+      install.packages(CRANpackages[pkg])
+    }
+  }
   
-  # Install package if not installed yet
-  if (!requireNamespace(CRANpackages[pkg], quietly = TRUE)){
-    install_version(CRANpackages[pkg], version = versions[pkg], 
-                    repos = "http://cran.us.r-project.org")
-  }
-  # Install package if correct version is not installed yet
-  if (packageVersion(CRANpackages[pkg]) != versions[pkg]){
-    install_version(CRANpackages[pkg], version = versions[pkg], 
-                    repos = "http://cran.us.r-project.org")
-  }
   # Load package
   require(as.character(CRANpackages[pkg]), character.only = TRUE)
 }
 
-################################################################################
-
-# 1.. Data cleaning
 
 ################################################################################
 
+# 1. Data cleaning
+
+################################################################################
+
+# In the first step, data cleaning will be performed. This step will lead to
+# the generation of three data frames:
+# 1) dataMatrix: contains values for each variable
+# 2) sampleInfo: contains sample ID and sample label
+# 3) featureInfo: contrains feature ID, feature names, and feature classes
 
 #******************************************************************************#
-#* 2.1. Prepare data matrix
+#* 1.1. Prepare data matrix
 #******************************************************************************#
 
 # Read data
 dataset <- read_excel(paste0(homeDir,"/Data.xlsx"))
 
 # Select the features (column 3-32)
-dataMatrix <- data.frame(dataset[,3:32])
+dataMatrix <- data.frame(dataset[,3:ncol(dataset)])
 rownames(dataMatrix) <- dataset$id
 
 # Replace NaN with NA
@@ -98,7 +117,7 @@ for (j in 1:ncol(dataMatrix)) {
 colnames(dataMatrix) <- str_replace_all(colnames(dataset)[3:32], " ", "_")
 
 #******************************************************************************#
-#* 2.2. Prepare sample Information object
+#* 1.2. Prepare sample Information object
 #******************************************************************************#
 
 # Get sample ID + label from the dataset
@@ -113,7 +132,7 @@ sampleInfo$diagnosis[sampleInfo$diagnosis == "M"] <- "Malignant"
 
 
 #******************************************************************************#
-#* 2.3. Prepare feature Information object
+#* 1.3. Prepare feature Information object
 #******************************************************************************#
 
 # Make a featureInfo data frame
@@ -148,17 +167,28 @@ save(sampleInfo, file = "sampleInfo.RData")
 
 ################################################################################
 
+# In the second step of this script, data pre-processing will be performed.
+# This procedure consists of the following steps:
+# 1) Data imputation
+# 2) Data transformation
+# 3) Outlier detection
+# 4) Data visualization
 
 #******************************************************************************#
 #* 2.1. Data imputation
 #******************************************************************************#
+
+# The missing values are assumed to be missing completely at random.
+# Hence, in this section KNN imputation will be performed to impute the 
+# missing values.
 
 # Load data (if needed)
 load("dataMatrix.RData")
 load("featureInfo.RData")
 load("sampleInfo.RData")
 
-# Impute missing values using KNN
+# Impute missing values using KNN 
+# NOTE: auto scaling is done within the function
 imputeModel <- preProcess(dataMatrix,
                           method = c("knnImpute"),
                           k = 10,
@@ -166,7 +196,7 @@ imputeModel <- preProcess(dataMatrix,
 
 dataMatrix_imputed <- predict(imputeModel, dataMatrix, na.action = na.pass)
 
-# The output values are unit scaled: reverse this
+# The output values are auto scaled: reverse this
 for(j in 1:ncol(dataMatrix_imputed)){
   dataMatrix_imputed[,j] <- dataMatrix_imputed[,j]*imputeModel$std[j]+imputeModel$mean[j] 
 }
@@ -175,9 +205,12 @@ for(j in 1:ncol(dataMatrix_imputed)){
 save(dataMatrix_imputed, file = "dataMatrix_imputed.RData")
 
 
-#******************************************************************************#
-#* 2.2. Visualize imputation
-#******************************************************************************#
+#==============================================================================#
+#* 2.1.1. Visualize imputation
+#==============================================================================#
+
+# Now we're going to make violin plots for each variable to see where the 
+# imputed values lie within the distribution.
 
 # Load data (if needed)
 load("dataMatrix_imputed.RData")
@@ -220,8 +253,12 @@ ggsave(plot = knnPlot, filename = "knnPlot.png", width = 12, height = 8)
 
 
 #******************************************************************************#
-#* 2.3. Transformation
+#* 2.2. Transformation
 #******************************************************************************#
+
+# In the violin plots, we already saw that the data seems to be right-skewed.
+# So, now log-transformation will be applied to make the data more normally 
+# distributed.
 
 # Load data (if needed)
 load("dataMatrix_imputed.RData")
@@ -237,8 +274,11 @@ dataMatrix_log_scaled <- t((t(dataMatrix_log) - rowMeans(t(dataMatrix_log)))/(ap
 
 
 #==============================================================================#
-# 1) Ridge plot
+# 2.2.1. Ridge plot
 #==============================================================================#
+
+# We make a ridge plot of before and after the log transformation to see how the
+# transformation affects the distribution of the variables.
 
 # Prepare data for plotting:
 
@@ -291,10 +331,10 @@ ggsave("ridgePlot.png",
 
 
 #==============================================================================#
-# 2) PCA plot
+# 2.2.2. PCA plot
 #==============================================================================#
 
-# Construct a PCA model using the filtered data
+# Now, we will check the effect of the transformation on the PCA score plot.
 
 #1) Non-transformed data
 pcaList <-  prcomp(dataMatrix_scaled,        
@@ -393,11 +433,14 @@ save(dataMatrix_log, file = "dataMatrix_log.RData")
 
 
 #******************************************************************************#
-#* 2.4. Outlier detection
+#* 2.3. Outlier detection
 #******************************************************************************#
 
+# In this section, we will check whether there are outliers in the data. This 
+# will be done using isolation forest and PCA (distance-distance plot).
+
 #==============================================================================#
-# 1) Isolation forest-based outlier detection
+# 2.3.1 Isolation forest-based outlier detection
 #==============================================================================#
 
 # Load (if needed) log-transformed data
@@ -485,7 +528,7 @@ anomalyHistogram <- ggplot(sampleInfo, aes(AnomalyScore1000, fill = diagnosis)) 
 ggsave(plot = anomalyHistogram, filename = "anomalyHistogram.png", width = 10, height = 8)
 
 #==============================================================================#
-# 2) PCA-based outlier detection
+# 2.3.2. PCA-based outlier detection
 #==============================================================================#
 
 # Auto-scale the data ((x - mean)/sd)
@@ -672,6 +715,130 @@ save(sampleInfo_filtered, file = "sampleInfo_filtered.RData")
 # the anomaly histogram, the PCA score plot, and the distance-distance plot 
 # look acceptable. So, no additional outliers need to be removed.
 #.............................................................................#
+
+
+#******************************************************************************#
+#* 2.4. Data Visualization
+#******************************************************************************#
+
+# Now, we can visualize the pre-processed data in two ways:
+# 1) PCA plot: scores and variances
+# 2) Feature-Feature correlation heatmap
+
+#==============================================================================#
+# 2.4.1. PCA
+#==============================================================================#
+
+# Load data (if needed)
+load("dataMatrix_filtered.RData")
+load("featureInfo.RData")
+
+# Auto-scale the data ((x - mean)/sd)
+dataMatrix_filtered_scaled <- t((t(dataMatrix_filtered) - rowMeans(t(dataMatrix_filtered)))/(apply(t(dataMatrix_filtered),1,sd)))
+
+# Construct a PCA model using the auto-scaled data
+pcaList <-  prcomp(dataMatrix_filtered_scaled,        
+                   retx = TRUE,
+                   center = FALSE,
+                   scale = FALSE)
+
+# Calculate the explained variances
+explVar <- round(((pcaList$sdev^2)/sum(pcaList$sdev^2))*100,2)
+
+# Retrieve scores from pcaList object
+PCAscores <- as.data.frame(pcaList$x)
+PCAscores$ID <- rownames(PCAscores)
+PCAscores <- inner_join(PCAscores, sampleInfo_filtered, by = c("ID" = "id"))
+
+# Make PCA score plot:
+PCA_ScorePlot_final <- ggplot(data = PCAscores, aes(x = PC1, y = PC2, color = diagnosis)) +
+  geom_point(alpha = 0.9, size = 2) +
+  geom_point(data = PCAscores[PCAscores$AnomalyScore1000 > anomalyThreshold,], aes(x = PC1, y = PC2), shape = 1, size = 5, color = "red") +
+  xlab(paste0("PC1 (", explVar[1],"%)")) +
+  ylab(paste0("PC2 (", explVar[2],"%)")) +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5,
+                                  face = "bold",
+                                  size = 14),
+        plot.subtitle = element_text(hjust = 0.5,
+                                     size = 10),
+        legend.position = "right",
+        legend.title = element_blank()) +
+  scale_color_manual(breaks = c("Malignant", "Benign"),
+                     values=c("#D61C4E", "#293462"))
+
+# Save PCA score plot
+ggsave(plot = PCA_ScorePlot_final, filename = "PCA_ScorePlot_final.png", width = 10, height = 8)
+
+
+# Get cumulative explained variances
+cumVar <- rep(NA, length(explVar))
+for (var in 1:length(explVar)) {
+  if (var != 1){
+    cumVar[var] <- cumVar[var - 1] + explVar[var]
+  } else{
+    cumVar[var] <- explVar[1]
+  }
+}
+# Combine (cumulative) explained variance in data frame for plotting
+plotVar <- data.frame(nPC = 1:length(explVar), explVar= explVar, cumVar = cumVar)
+
+# Make explained variance plot
+explVarPlot_final <- ggplot(plotVar, aes(x = nPC)) +
+  geom_bar(aes(y = explVar, fill = explVar), stat = "identity", color = "black") +
+  geom_line(aes(y = cumVar/2, group = 1), size = 1, color = "grey") +
+  geom_point(aes(y = cumVar/2), size = 2) +
+  ggtitle("PCA Explained Variation") +
+  scale_y_continuous(
+    
+    # Features of the first axis
+    name = "Explained Variance (%)",
+    
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*2, name="Cumulative Explained Variance (%)")
+  ) + 
+  xlab("Principal Components") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5,
+                                  face = "bold",
+                                  size = 16),
+        legend.position = "none")
+
+# Save PCA explained variance plot
+ggsave(plot = explVarPlot_final, filename = "explVarPlot_final.png", width = 10, height = 8)
+
+
+#==============================================================================#
+# 2.4.2. Feature-Feature Correlations
+#==============================================================================#
+
+# Load data (if needed)
+load("dataMatrix_filtered.RData")
+load("featureInfo.RData")
+
+# Get Pairwise feature correlations
+correlations <- cor(dataMatrix_filtered, use="complete.obs", method="spearman")
+
+# Add feature names to columns correlation matrix
+all(colnames(correlations) == featureInfo$Name)
+colnames(correlations) <- featureInfo$Name1
+
+# Add feature names to rows correlation matrix
+all(rownames(correlations) == featureInfo$Name)
+rownames(correlations) <- featureInfo$Name1
+
+# Perform hierarchical clustering
+hierClust <- hclust(as.dist(1-correlations), method = "ward.D2")
+
+# Make and save heatmap as html file
+heatmaply(
+  correlations,
+  Rowv = as.dendrogram(hierClust),
+  Colv = as.dendrogram(hierClust),
+  key.title = "Spearman\nCorrelation",
+  file = "heatmapCorrelations.html"
+)
+
 
 ################################################################################
 

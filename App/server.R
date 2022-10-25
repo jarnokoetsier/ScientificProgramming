@@ -8,6 +8,9 @@
 # RStudio version: 2022.7.1.544 (RStudio.Version())
 #=============================================================================#
 
+# DISCLAIMER: The code has been developed using R version 4.2.1. Code 
+# functionality for other R versions can not be guaranteed. 
+
 #Server
 server <- function(input, output, session) {
   

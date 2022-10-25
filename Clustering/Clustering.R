@@ -8,6 +8,8 @@
 # RStudio version: 2022.7.1.544 (RStudio.Version())
 #=============================================================================#
 
+# DISCLAIMER: The code has been developed using R version 4.2.1. Code 
+# functionality for other R versions can not be guaranteed. 
 
 ###############################################################################
 
@@ -47,7 +49,7 @@ versions <- c("1.3.2",
               "4.7.1.1",
               "1.3.0",
               "2.3",
-              "4.2.1",
+              NA,        # version of grid package depends on the R version
               "0.9.1",
               "6.0.93",
               "4.1.4")
@@ -55,16 +57,28 @@ versions <- c("1.3.2",
 # Install (if not yet installed) and load the required CRAN packages:
 for (pkg in 1:length(CRANpackages)) {
   
-  # Install package if not installed yet
-  if (!requireNamespace(CRANpackages[pkg], quietly = TRUE)){
-    install_version(CRANpackages[pkg], version = versions[pkg], 
-                    repos = "http://cran.us.r-project.org")
+  # If version is available, install correct version
+  if (!is.na(versions[pkg])){
+    # Install package if not installed yet
+    if (!requireNamespace(CRANpackages[pkg], quietly = TRUE)){
+      install_version(CRANpackages[pkg], version = versions[pkg], 
+                      repos = "http://cran.us.r-project.org")
+    }
+    # Install package if correct version is not installed yet
+    if (packageVersion(CRANpackages[pkg]) != versions[pkg]){
+      install_version(CRANpackages[pkg], version = versions[pkg], 
+                      repos = "http://cran.us.r-project.org")
+    }
   }
-  # Install package if correct version is not installed yet
-  if (packageVersion(CRANpackages[pkg]) != versions[pkg]){
-    install_version(CRANpackages[pkg], version = versions[pkg], 
-                    repos = "http://cran.us.r-project.org")
+  
+  # If version is not available, install latest version
+  if (is.na(versions[pkg])){
+    # Install package if not installed yet
+    if (!requireNamespace(CRANpackages[pkg], quietly = TRUE)){
+      install.packages(CRANpackages[pkg])
+    }
   }
+  
   # Load package
   require(as.character(CRANpackages[pkg]), character.only = TRUE)
 }

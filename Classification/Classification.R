@@ -8,6 +8,8 @@
 # RStudio version: 2022.7.1.544 (RStudio.Version())
 #=============================================================================#
 
+# DISCLAIMER: The code has been developed using R version 4.2.1. Code 
+# functionality for other R versions can not be guaranteed. 
 
 ###############################################################################
 
@@ -48,7 +50,7 @@ versions <- c("1.3.2",
               "6.0.93",
               "4.1.4",
               "2.3",
-              "4.2.1",
+              NA,       # version of grid package depends on the R version
               "0.0.7",
               "1.5.2",
               "1.0.17",
@@ -57,16 +59,28 @@ versions <- c("1.3.2",
 # Install (if not yet installed) and load the required CRAN packages:
 for (pkg in 1:length(CRANpackages)) {
   
-  # Install package if not installed yet
-  if (!requireNamespace(CRANpackages[pkg], quietly = TRUE)){
-    install_version(CRANpackages[pkg], version = versions[pkg], 
-                    repos = "http://cran.us.r-project.org")
+  # If version is available, install correct version
+  if (!is.na(versions[pkg])){
+    # Install package if not installed yet
+    if (!requireNamespace(CRANpackages[pkg], quietly = TRUE)){
+      install_version(CRANpackages[pkg], version = versions[pkg], 
+                      repos = "http://cran.us.r-project.org")
+    }
+    # Install package if correct version is not installed yet
+    if (packageVersion(CRANpackages[pkg]) != versions[pkg]){
+      install_version(CRANpackages[pkg], version = versions[pkg], 
+                      repos = "http://cran.us.r-project.org")
+    }
   }
-  # Install package if correct version is not installed yet
-  if (packageVersion(CRANpackages[pkg]) != versions[pkg]){
-    install_version(CRANpackages[pkg], version = versions[pkg], 
-                    repos = "http://cran.us.r-project.org")
+  
+  # If version is not available, install latest version
+  if (is.na(versions[pkg])){
+    # Install package if not installed yet
+    if (!requireNamespace(CRANpackages[pkg], quietly = TRUE)){
+      install.packages(CRANpackages[pkg])
+    }
   }
+  
   # Load package
   require(as.character(CRANpackages[pkg]), character.only = TRUE)
 }
@@ -178,7 +192,7 @@ scores_all$Train <- c(rep("Training", nrow(scores_train)), rep("Test", nrow(scor
 scores_all$Group <- paste0(scores_all$Train, ": ", scores_all$diagnosis)
 
 # Plot the scores of the training data and the project scores of the test data 
-PCAtrain <- ggplot()+
+PCA_TrainTest <- ggplot()+
   geom_point(data = scores_all, aes(x = PC1, y = PC2, shape = Group, color = Group), size = 2, alpha = 0.9) +
   scale_shape_manual(values = c(15,17,0,2)) +
   scale_color_brewer(palette = "Dark2") +
@@ -197,7 +211,7 @@ PCAtrain <- ggplot()+
                                     face = "italic"))
 
 # Save plot
-ggsave(PCAtrain, file = "PCA_TrainingAndTest.png", width = 10, height = 8)
+ggsave(PCA_TrainTest, file = "PCA_TrainingAndTest.png", width = 8, height = 6)
 
 #******************************************************************************#
 # 1.3. Save training and test set
@@ -451,7 +465,7 @@ coeff_plot <- ggplot(coeffPlot, aes(x = Name1, y = value)) +
   scale_color_brewer(palette = "Dark2")
 
 # Save plot
-ggsave(plot = coeff_plot, filename = "coefficientPlot.png", width = 10, height = 8)
+ggsave(plot = coeff_plot, filename = "coefficientPlot.png", width = 8, height = 6)
 
 
 
