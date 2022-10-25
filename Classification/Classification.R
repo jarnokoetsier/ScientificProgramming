@@ -39,7 +39,7 @@ CRANpackages <- c("tidyverse",     # Data formatting and plotting
                   "glmnet",        # Construct elastic net model
                   "gridExtra",     # Combine images in single plot
                   "grid",          # Add elements to the combined image
-                  "UBL",           # Adasyn algorithm for class imbalance
+                  "UBL",           # ADASYN algorithm for class imbalance
                   "foreach",       # Needed for parallel computing
                   "doParallel",    # Needed for parallel computing
                   "pROC")          # Make ROC curve
@@ -97,6 +97,8 @@ load(paste0(homeDir, "/Pre-processing/", "sampleInfo_filtered.RData"))
 
 ################################################################################
 
+# The first step includes selecting a representative training set. This will be
+# done using the Kennard-Stone algorithm.
 
 #*****************************************************************************#
 # 1.1. Select representative training set using Kennard-Stone algorithm
@@ -228,6 +230,11 @@ save(testClass, file = "testClass.RData")
 # 2. Construct classification models
 
 ################################################################################
+
+# Now we've split the data in a training and test set, we can start building
+# a classification model using 10 repeated 5-fold cross-validation with
+# recursive feature elimination.
+
 # NOTE: running this section does require a reasonable amount of computational
 # time (approx. 17 min in my case).
 
@@ -346,6 +353,10 @@ save(modelInfo, file = "modelInfo.RData")
 
 ################################################################################
 
+# Now we can select the optimal number of features and evaluate the model:
+# 1) Evaluate the number of features and cross validation accuracy
+# 2) Evaluate the stability of the regression coefficients in the cross-validation
+# 3) Evaluate model performance on test data
 
 #******************************************************************************#
 # 3.1. Evaluate the accuracy for the different number of features
@@ -391,11 +402,9 @@ ggsave(plot = accuracy_plot, filename = "accuracyPlot.png", width = 10, height =
 # 3.2. Evaluate the stability of the coefficients
 #******************************************************************************#
 
-# Stability of coefficients
-
-# Exclude the 26 worst features: 
 # We saw that after removing more than 26 features the CV accuracy decreases
 # in the accuracyPlot.png image
+# So, exclude the 26 worst features: 
 excludedFeatures <- modelInfo$removedFeature[1:(30 - n_features)]
 trainingData_filtered <- trainingData_scaled[,!(colnames(trainingData_scaled) %in% excludedFeatures)]
 
@@ -442,8 +451,7 @@ colnames(finalCoeffs) <- c("value", "key")
 # Combine data frame with feature information
 finalCoeffs <- inner_join(finalCoeffs, featureInfo, by = c("key" = "Name"))
 
-
-# Make plot
+# Make violin plot of regression coefficients
 coeff_plot <- ggplot(coeffPlot, aes(x = Name1, y = value)) + 
   geom_violin(aes(fill = Name1), alpha = 0.5) +
   geom_boxplot(width=0.1, fill="white")+
@@ -452,7 +460,7 @@ coeff_plot <- ggplot(coeffPlot, aes(x = Name1, y = value)) +
   labs(caption = "NOTE: The large black diamant in the violin plot indicates the regression coefficient in the final model.") +
   xlab(NULL) +
   ylab("Regression Coefficient") +
-  #ylim(c(0,2)) +
+  ylim(c(0,2.12)) +
   theme_classic() +
   theme(legend.position = "none",
         plot.title = element_text(hjust = 0.5,
@@ -468,9 +476,8 @@ coeff_plot <- ggplot(coeffPlot, aes(x = Name1, y = value)) +
 ggsave(plot = coeff_plot, filename = "coefficientPlot.png", width = 8, height = 6)
 
 
-
 #******************************************************************************#
-# 3.2. Evaluate the performance on the test set
+# 3.3. Evaluate the performance on the test set
 #******************************************************************************#
 
 # If needed, load the final model
@@ -702,7 +709,7 @@ PCA_prob <- ggplot()+
                                     face = "italic"))
 
 # Save plot
-ggsave(PCA_prob, file = "PCA_Probability.png", width = 12, height = 8)
+ggsave(PCA_prob, file = "PCA_Probability.png", width = 10, height = 6)
 
 ################################################################################
 
