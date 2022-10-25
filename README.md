@@ -30,7 +30,7 @@ More information about the variables can be found on page 8 in this [paper by We
 ## Research aim
 The aim of the analysis is three-fold:
 1. Construct a robust classifier to distinguish malignant from benign samples (**Classification**).
-2. Identify subclasses within the maligant samples (**Clustering**).
+2. Identify subclasses within the malignant samples (**Clustering**).
 3. Create an app for the prediction and visualization of new samples (**App**).
 
 ## Analysing the data
@@ -64,7 +64,7 @@ runApp(..PATH../ScientificProgramming/App)
 ```
  ### Now you can use the classification model to predict the class of new samples!
  
-![App Demo](/Figures/AppDemo1.gif?raw=true "App Demo")
+![App Demo](/Figures/AppDemo2.gif?raw=true "App Demo")
 
 
 ## Contact
