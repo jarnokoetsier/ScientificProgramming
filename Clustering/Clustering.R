@@ -8,8 +8,9 @@
 # RStudio version: 2022.7.1.544 (RStudio.Version())
 #=============================================================================#
 
-# DISCLAIMER: The code has been developed using R version 4.2.1. Code 
-# functionality for other R versions can not be guaranteed. 
+# DISCLAIMER: The code has been developed using R version 4.2.1. Although the 
+# code will likely work for other R versions as well, its functionality for 
+# other R versions can not be guaranteed. 
 
 ###############################################################################
 
@@ -329,7 +330,7 @@ save(clusterDF, file = "clusterDF.RData")
 colors <- c(brewer.pal(3, "Dark2"), "grey")
 levels(colors) <- c("1", "2", "3", "Other")
 
-# Make and save heatmap as html file
+# Make and save heatmap as .HTML file
 heatmaply(
   avgProx,
   Rowv = as.dendrogram(hierClust),
@@ -348,7 +349,7 @@ heatmaply(
 #******************************************************************************#
 
 # Now, we can also perform PCoA to see how the different clusters compare.
-# PCoA is done by performing PCA on the dissimilarity matrix
+# PCoA is done by performing PCA on the dissimilarity/distant matrix
 
 # Center data (double mean centering)
 diss_centered <- diss - rowMeans(diss) - colMeans(diss) + mean(diss)
