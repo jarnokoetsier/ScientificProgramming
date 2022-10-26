@@ -60,7 +60,7 @@ install.packages("shiny")
 library(shiny)
 
 # Run the shiny app
-runApp(..PATH../ScientificProgramming/App)
+runApp("..PATH../ScientificProgramming/App")
 ```
  ### Now you can use the classification model to predict the class of new samples!
  
