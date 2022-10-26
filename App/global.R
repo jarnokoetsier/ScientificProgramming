@@ -62,6 +62,9 @@ for (pkg in 1:length(CRANpackages)) {
 # Set working directory
 wd <- getwd()
 homeDir <- str_remove(wd, "/App")
+homeDir <- str_remove(homeDir, "/Pre-Processing")
+homeDir <- str_remove(homeDir, "/Classification")
+homeDir <- str_remove(homeDir, "/Clustering")
 
 # Load data
 load(paste0(homeDir, "/Classification/trainingData_filtered.RData"))
