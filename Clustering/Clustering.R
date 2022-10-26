@@ -56,7 +56,6 @@ versions <- c("1.3.2",
 
 # Install (if not yet installed) and load the required CRAN packages:
 for (pkg in 1:length(CRANpackages)) {
-  
   # If version is available, install correct version
   if (!is.na(versions[pkg])){
     # Install package if not installed yet
@@ -70,7 +69,6 @@ for (pkg in 1:length(CRANpackages)) {
                       repos = "http://cran.us.r-project.org")
     }
   }
-  
   # If version is not available, install latest version
   if (is.na(versions[pkg])){
     # Install package if not installed yet
@@ -78,7 +76,6 @@ for (pkg in 1:length(CRANpackages)) {
       install.packages(CRANpackages[pkg])
     }
   }
-  
   # Load package
   require(as.character(CRANpackages[pkg]), character.only = TRUE)
 }
@@ -98,15 +95,22 @@ dataMatrix_malignant_scaled <- t((t(dataMatrix_malignant) - rowMeans(t(dataMatri
 
 ###############################################################################
 
-# Network-based clustering (Newman-Girvan Algorithm)
+# 1. Network-based clustering (Newman-Girvan Algorithm)
 
 ###############################################################################
 
+# So, the first step of the analysis consist of clustering samples in a network-
+# based approach. This approach does not require any prior information about
+# the expected number of clusters, but instead tries to find distinct 
+# "communities" within the network.
 
 #******************************************************************************#
-# PCA for feature selection
+# 1.1. PCA for feature selection
 #******************************************************************************#
 
+# Because many features are correlated, I would like to use a set of 
+# uncorrelated variables to calculate pairwise sample correlations.
+# The principal component are such a set of uncorrelated variables.
 
 # Perform PCA
 pcaList <-  prcomp(dataMatrix_malignant_scaled,        
@@ -156,15 +160,17 @@ explVarPlot <- ggplot(plotVar, aes(x = nPC)) +
 # save plot
 ggsave(plot = explVarPlot, filename = "explVarPlot.png", width = 10, height = 8)
 
+#=============================================================================#
 # After the first 7 PCs, the explained variance flattens. So, we will use the
 # first 7 PCs for clustering
+#=============================================================================#
 
 # Get PCA scores
 PCA_scores <- as.data.frame(pcaList$x[,1:nPCs])
 
 
 #******************************************************************************#
-# Network construction
+# 1.2. Network construction
 #******************************************************************************#
 
 # Construct co-expression matrix
@@ -173,12 +179,14 @@ res.cor <- as.data.frame(res.cor)
 row.names(res.cor) <- res.cor$term
 res.cor[1] <- NULL
 
-# Filter co-expression matrix
+# Filter co-expression matrix:
+# Samples should be connected in the network if they have at least a correlation
+# coefficient of 0.6
 res.cor.filtered <- res.cor
 res.cor.filtered[res.cor.filtered < 0.6] <- 0
 res.cor.filtered[abs(res.cor.filtered) >= 0.6] <- 1
 
-# Make graph
+# Make graph/network:
 graph <- igraph::graph_from_adjacency_matrix(as.matrix(res.cor.filtered), weighted=NULL)
 graph <- as.undirected(graph, mode = "collapse")
 
@@ -189,13 +197,14 @@ clusters <- as.character(communities$membership)
 # Check number of samples per cluster:
 table(clusters)
 
-# Clusters 1, 2 and 3 are the major clusters
+# Clusters 1, 2 and 3 are the major clusters.
+# So, set all other clusters to "other"
 clusters[as.numeric(clusters) > 3] <- "Other"
 
 # Add cluster labels to graph object
 V(graph)$membership <- as.character(clusters)
 
-# Make network
+# plot the network
 plotNetwork <- ggraph(graph, layout = "stress") +
   geom_edge_link(color = "lightgrey") +
   geom_node_point(aes(color = membership), size = 3) +
@@ -214,29 +223,45 @@ clusters_network <- data.frame(
 
 ###############################################################################
 
-# Unsupervised random forest + Hierarchical clustering
+# 2. Unsupervised random forest + Hierarchical clustering
 
 ###############################################################################
 
+# So, now we are going to make clusters based on the distance matrix produced
+# from unsupervised random forest.
+
 #******************************************************************************#
-# Unsupervised random forest
+# 2.1. Unsupervised random forest
 #******************************************************************************#
 
-# Construct unsupervised random forest model
+# Construct unsupervised random forest model 10 times to ensure stable results.
+nrep = 10
 set.seed(123)
-rf <- randomForest(x = dataMatrix_malignant,
+for (i in 1:nrep){
+  # Construct unsupervised random forest model
+  rf <- randomForest(x = dataMatrix_malignant,
                      importance = TRUE,
                      ntree = 1000,
                      nodesize = 10)
-# proximity matrix
-prox <- rf$proximity
+ 
+   # Get the sum fo the proximities
+  if (i != 1) {
+    prox <- prox + rf$proximity
+  }
+  if (i == 1) {
+    prox <- rf$proximity
+  }
+}
+
+# Calculate the average proximity
+avgProx <- prox/nrep
 
 # Convert to dissimilarity (distant) matrix
-diss <- 1 - rf$proximity
+diss <- 1 - avgProx
 
 
 #******************************************************************************#
-# Hierarchical-clustering on dissimilarity martrix
+# 2.2. Hierarchical-clustering on dissimilarity martrix
 #******************************************************************************#
 
 # Perform hierarchical clustering on dissimilarity matrix
@@ -274,25 +299,31 @@ ggsave(dendrogram, file = "Dendrogram.png", width = 8, height = 8)
 
 ###############################################################################
 
-# Combined Cluster visualization
+# 3. Combined Cluster visualization
 
 ###############################################################################
+
+# In this section, we are going the visualize the clusters in different ways
+# to see how these clusters compare to eachother
 
 # Compare network-based and URF-based clusters
 table(clusters_rf$Cluster_rf, clusters_network$Cluster_Network)
 
 # So, we see the following three main ensemble clusters:
 # -Cluster 1 from the Network and cluster 1 from the URF-Hierarchical clustering
-# -Cluster 2 from the Network and cluster 3 from the URF-Hierarchical clustering
-# -Cluster 3 from the Network and cluster 2 from the URF-Hierarchical clustering
+# -Cluster 2 from the Network and cluster 2 from the URF-Hierarchical clustering
+# -Cluster 3 from the Network and cluster 3 from the URF-Hierarchical clustering
 
 # Save clusters
 clusterDF <- inner_join(clusters_network, clusters_rf, by = c("ID" = "ID"))
 save(clusterDF, file = "clusterDF.RData")
 
 #******************************************************************************#
-# Heatmap
+# 3.1. Heatmap
 #******************************************************************************#
+
+# Here we will plot a heatmap in which the values are the average proximity
+# as calculated in the unsupervised random forest.
 
 # Colors for cluster visualization
 colors <- c(brewer.pal(3, "Dark2"), "grey")
@@ -300,7 +331,7 @@ levels(colors) <- c("1", "2", "3", "Other")
 
 # Make and save heatmap as html file
 heatmaply(
-  prox,
+  avgProx,
   Rowv = as.dendrogram(hierClust),
   Colv = as.dendrogram(hierClust),
   key.title = "Proximity\nValue",
@@ -313,9 +344,10 @@ heatmaply(
 )
 
 #******************************************************************************#
-# Principal Coordinate Analysis (PCoA)
+# 3.2. Principal Coordinate Analysis (PCoA)
 #******************************************************************************#
 
+# Now, we can also perform PCoA to see how the different clusters compare.
 # PCoA is done by performing PCA on the dissimilarity matrix
 
 # Center data (double mean centering)
@@ -386,8 +418,11 @@ ggsave("PCoAplot.png",
 
 
 #******************************************************************************#
-# PCA
+# 3.3. PCA
 #******************************************************************************#
+
+# Here we are going to make PCA plots to see how the different clusters
+# compare to each other.
 
 # Perform PCA
 pcaList <-  prcomp(dataMatrix_malignant_scaled,        
@@ -456,11 +491,11 @@ plotPCA_scores$combined <- paste0(plotPCA_scores$Cluster_Network, "/", plotPCA_s
 
 # As we saw before, the largest overlap of clusters is:
 # -Cluster 1 from the Network and cluster 1 from the URF-Hierarchical clustering
-# -Cluster 2 from the Network and cluster 3 from the URF-Hierarchical clustering
-# -Cluster 3 from the Network and cluster 2 from the URF-Hierarchical clustering
+# -Cluster 2 from the Network and cluster 2 from the URF-Hierarchical clustering
+# -Cluster 3 from the Network and cluster 3 from the URF-Hierarchical clustering
 
 # All other combinations will thus be set to be "Other" for the visualization:
-plotPCA_scores$combined[!(plotPCA_scores$combined%in% c("1/1", "2/3", "3/2"))] <- "Other"
+plotPCA_scores$combined[!(plotPCA_scores$combined%in% c("1/1", "2/2", "3/3"))] <- "Other"
 
 
 # Get PCA projections of beneign samples:
@@ -530,13 +565,15 @@ ggsave("PCAplot2.png",
 
 ###############################################################################
 
-# Cluster evaluation
+# 4. Cluster evaluation
 
 ###############################################################################
 
+# In this section, we will focus on understanding the (biological) meaning
+# of the clusters.
 
 #******************************************************************************#
-# Find the important variables for the cluster definitions
+# 4.1. Find the important variables for the cluster definitions
 #******************************************************************************#
 
 # Get data from malignant samples
@@ -548,7 +585,7 @@ plotMalignant<- inner_join(plotMalignant, clusterDF, by = c("ID" = "ID"))
 
 # Combine the two clusters
 plotMalignant$combined <- paste0(plotMalignant$Cluster_Network, "/", plotMalignant$Cluster_rf)
-plotMalignant$combined[!(plotMalignant$combined%in% c("1/1", "2/3", "3/2"))] <- "Other"
+plotMalignant$combined[!(plotMalignant$combined%in% c("1/1", "2/2", "3/3"))] <- "Other"
 
 # Get data from benign samples
 plotBenign <- dataMatrix_filtered[!(rownames(dataMatrix_filtered) %in% rownames(dataMatrix_malignant)),]
@@ -626,8 +663,12 @@ ggsave("clusterEvaluation.png",
 #.............................................................................#
 
 #******************************************************************************#
-# Link classification performance to clusters
+# 4.2. Link classification performance to clusters
 #******************************************************************************#
+
+# Now, we can check whether the clusters have a different class probability.
+# A class probability of 1 would mean that the sample is classified as malignant 
+# with high confidence.
 
 # Folder that contains the classification data
 classificationFolder <- paste0(homeDir, "/Classification/")
@@ -654,7 +695,7 @@ prob_malignant <- prob[prob$diagnosis == "Malignant",]
 # Add cluster information
 prob_malignant <- inner_join(prob_malignant, clusterDF, by = c("ID" = "ID"))
 prob_malignant$combined <- paste0(prob_malignant$Cluster_Network, "/", prob_malignant$Cluster_rf)
-prob_malignant$combined[!(prob_malignant$combined%in% c("1/1", "2/3", "3/2"))] <- "Other"
+prob_malignant$combined[!(prob_malignant$combined%in% c("1/1", "2/2", "3/3"))] <- "Other"
 
 # Make plot: class probability for each cluster
 ClusterProbabilities <- ggplot() +
