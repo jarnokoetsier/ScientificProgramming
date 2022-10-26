@@ -178,7 +178,7 @@ save(sampleInfo, file = "sampleInfo.RData")
 #* 2.1. Data imputation
 #******************************************************************************#
 
-# The missing values are assumed to be missing completely at random.
+# The missing values are assumed to be able to be approximated by similar samples.
 # Hence, in this section KNN imputation will be performed to impute the 
 # missing values.
 
@@ -450,10 +450,10 @@ load("sampleInfo.RData")
 
 # Make isolation forest model with 1000 trees
 set.seed(123)
-iforest_1000 <- isolation.forest(dataMatrix_log, 
-                                ndim=1, 
-                                ntrees=1000,
-                                missing_action="fail")
+iforest_1000 <- isolation.forest(dataMatrix_log,  
+                                ndim=1,                # Split is produced based on single variable
+                                ntrees=1000,           # 1000 trees are grown
+                                missing_action="fail") # Give error when there is a missing value
 # Calculate anomaly scores
 anomalyScore_1000 <- predict(iforest_1000, dataMatrix_log, type = "score")
 
@@ -467,9 +467,9 @@ sampleInfo$AnomalyScore1000 <- as.vector(anomalyScore_1000)
 # (This will be used to check for convergence)
 set.seed(123)
 iforest_500 <- isolation.forest(dataMatrix_log, 
-                                ndim=1, 
-                                ntrees=500,
-                                missing_action="fail")
+                                ndim=1,                # Split is produced based on single variable
+                                ntrees=500,            # 500 trees are grown
+                                missing_action="fail") # Give error when there is a missing value
 # Calculate anomaly scores
 anomalyScore_500 <- predict(iforest_500, dataMatrix_log, type = "score")
 
