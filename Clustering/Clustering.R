@@ -1,6 +1,6 @@
 #=============================================================================#
 # File: Clustering.R
-# Date: October 15, 2022										                                      
+# Date: October 27, 2022										                                      
 # Author: Jarno Koetsier                                                      
 # Data: 'dataMatrix_filtered.RData','featureInfo.Rdata','sampleInfo_filtered.RData'
 #
@@ -245,7 +245,7 @@ for (i in 1:nrep){
                      ntree = 1000,
                      nodesize = 10)
  
-   # Get the sum fo the proximities
+   # Get the sum fo the proximity values
   if (i != 1) {
     prox <- prox + rf$proximity
   }
@@ -269,6 +269,9 @@ diss <- 1 - avgProx
 hierClust <- hclust(as.dist(diss), method = "ward.D2")
 
 # Get clusters (k = 3)
+# Three clusters are selected because the previous method found three major
+# communities. So, equal number of clusters are chosen to allow for a comparison
+# between the clustering methods.
 clusters <-  cutree(hierClust, k = 3)
 clusters_rf <- data.frame(
   ID = names(clusters),
@@ -489,7 +492,7 @@ ggsave("PCAplot1.png",
 
 # Combine clusters
 plotPCA_scores$combined <- paste0(plotPCA_scores$Cluster_Network, "/", plotPCA_scores$Cluster_rf)
-
+table(plotPCA_scores$combined)
 # As we saw before, the largest overlap of clusters is:
 # -Cluster 1 from the Network and cluster 1 from the URF-Hierarchical clustering
 # -Cluster 2 from the Network and cluster 2 from the URF-Hierarchical clustering
@@ -498,8 +501,7 @@ plotPCA_scores$combined <- paste0(plotPCA_scores$Cluster_Network, "/", plotPCA_s
 # All other combinations will thus be set to be "Other" for the visualization:
 plotPCA_scores$combined[!(plotPCA_scores$combined%in% c("1/1", "2/2", "3/3"))] <- "Other"
 
-
-# Get PCA projections of beneign samples:
+# Get PCA projections of benign samples:
 
 # 1) Get benign samples
 dataMatrix_benign <- dataMatrix_filtered[!(rownames(dataMatrix_filtered) %in% rownames(dataMatrix_malignant)),]
@@ -667,7 +669,7 @@ ggsave("clusterEvaluation.png",
 # 4.2. Link classification performance to clusters
 #******************************************************************************#
 
-# Now, we can check whether the clusters have a different class probability.
+# Now, we can check whether the clusters have a different class probabilities.
 # A class probability of 1 would mean that the sample is classified as malignant 
 # with high confidence.
 
