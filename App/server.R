@@ -1,6 +1,6 @@
 #=============================================================================#
 # File: server.R
-# Date: October 15, 2022										                                      
+# Date: October 27, 2022										                                      
 # Author: Jarno Koetsier                                                      
 # Data: NA
 #
@@ -18,6 +18,8 @@ server <- function(input, output, session) {
   #******************************************************************************#
   # 1) Preparation
   #******************************************************************************#
+  
+  # Welcome message
   sendSweetAlert(
     session = session,
     title = paste0("Hi ", Sys.getenv("USERNAME")),
@@ -241,6 +243,7 @@ server <- function(input, output, session) {
   # 4) Scatter plot
   #******************************************************************************#
   
+  # Observation
   observedValue <- eventReactive(input$Predict,{
     observedValue <- as.data.frame(t(as.data.frame(c(input$AreaSE,
                                                      input$TextureWorst, 
@@ -251,6 +254,7 @@ server <- function(input, output, session) {
     
   })
    
+  # Scatter plot
    output$scatter <- renderPlotly({
      req(observedValue())
      
@@ -322,6 +326,7 @@ server <- function(input, output, session) {
    # 5) Histogram
    #******************************************************************************#
    
+   # Histogram
    output$histPlot <- renderPlotly({
      req(observedValue())
      
@@ -348,6 +353,7 @@ server <- function(input, output, session) {
      observedValue <- observedValue()
      colnames(observedValue) <-colnames(plotData)[1:3]
      
+     # Make plot
      histPlot <- ggplot()+
        geom_histogram(aes(x = plotData[,f1], fill = plotData$diagnosis), bins = 100, position = "identity", alpha = 0.5) +
        geom_vline(xintercept = observedValue[,f1], size = 1, color = "red", linetype = "dashed") +
@@ -381,6 +387,7 @@ server <- function(input, output, session) {
        scale_fill_manual(breaks = c("Malignant","Benign"),
                           values = c("#E12A36", "#7EC8E3"))
      
+     # Return plot
      return(ggplotly(histPlot, tooltip = "y"))
      
    })
