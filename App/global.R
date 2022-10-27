@@ -1,6 +1,6 @@
 #=============================================================================#
 # File: global.R
-# Date: October 15, 2022										                                      
+# Date: October 27, 2022										                                      
 # Author: Jarno Koetsier                                                      
 # Data: 'trainingData_filtered.RData', 'trainingData.RData', trainingClass.Rdata'
 # 'testData.RData', "finalModel.RData', 'sampleInfo_filtered.RData', and
