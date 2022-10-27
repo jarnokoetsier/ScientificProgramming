@@ -365,6 +365,7 @@ save(modelInfo, file = "modelInfo.RData")
 
 # Load (if needed) modelInfo data object
 load("modelInfo.Rdata")
+source("MLfunction.R")
 
 # Get accuracy for all repeated cross-validations
 plotAccuracy <- gather(as.data.frame(modelInfo$accuracy), value = "Accuracy")
