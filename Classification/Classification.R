@@ -1,6 +1,6 @@
 #=============================================================================#
 # File: Classification.R
-# Date: October 15, 2022										                                      
+# Date: October 27, 2022										                                      
 # Author: Jarno Koetsier                                                      
 # Data: 'dataMatrix_filtered.RData','featureInfo.Rdata','sampleInfo_filtered.RData'
 #
