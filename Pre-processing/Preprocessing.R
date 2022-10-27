@@ -604,7 +604,7 @@ reconstruction <- as.matrix(PCAscores[,1:2]) %*%t(loadings[,1:2])
 all(round(dataMatrix_log_scaled - reconstruction - residuals,3) == 0)
 
 # Calculate the orthogonal distances
-ortDist<- sqrt((rowSums(residuals))^2)
+ortDist<- sqrt(rowSums(residuals^2))
 
 # Calculate the mahalanobis distances
 coVar <- cov(PCAscores[,1:2])
