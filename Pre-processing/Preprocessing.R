@@ -1,6 +1,6 @@
 #=============================================================================#
 # File: Preprocessing.R
-# Date: October 25, 2022										                                      
+# Date: October 27, 2022										                                      
 # Author: Jarno Koetsier                                                      
 # Data: 'Data.xlsx' 
 #
@@ -79,7 +79,6 @@ for (pkg in 1:length(CRANpackages)) {
       install.packages(CRANpackages[pkg])
     }
   }
-  
   # Load package
   require(as.character(CRANpackages[pkg]), character.only = TRUE)
 }
@@ -95,7 +94,7 @@ for (pkg in 1:length(CRANpackages)) {
 # the generation of three data frames:
 # 1) dataMatrix: contains values for each variable
 # 2) sampleInfo: contains sample ID and sample label
-# 3) featureInfo: contrains feature ID, feature names, and feature classes
+# 3) featureInfo: contains feature ID, feature names, and feature classes
 
 #******************************************************************************#
 #* 1.1. Prepare data matrix
@@ -230,7 +229,7 @@ imputedValues <- gather(data.frame(dataMatrix_scaled[which(is.na(dataMatrix))]))
 imputedValues$key <- colnames(dataMatrix)[which(is.na(dataMatrix), arr.ind = TRUE)[,2]]
 imputedValues <- inner_join(imputedValues, featureInfo, by = c("key" = "Name"))
 
-# Make violin plots
+# Make violin plots --> Indicate imputed values in violin plots
 knnPlot <- ggplot(plotData, aes(x = Name1, y = value, fill = Statistic)) +
   geom_violin() +
   geom_point(data = imputedValues, aes(x = Name1, y = value), color = "red", shape = 18, size = 3) +
@@ -597,11 +596,15 @@ ggsave("PCA_ScorePlot_Outliers.png",
 
 
 # Split data into reconstruction and residuals based on the first two PC's
-reconstruction <- as.matrix(PCAscores[,1:2]) %*% t(as.matrix(PCAscores[,1:2]))
-residuals <- as.matrix(PCAscores[,3:30]) %*% t(as.matrix(PCAscores[,3:30]))
+loadings <- pcaList$rotation
+residuals <- as.matrix(PCAscores[,3:30])%*%t(loadings[,3:30])
+reconstruction <- as.matrix(PCAscores[,1:2]) %*%t(loadings[,1:2])
+
+# Check if reconstruction + residuals equals the data matrix.
+all(round(dataMatrix_log_scaled - reconstruction - residuals,3) == 0)
 
 # Calculate the orthogonal distances
-ortDist<- sqrt(rowSums(residuals^2))
+ortDist<- sqrt((rowSums(residuals))^2)
 
 # Calculate the mahalanobis distances
 coVar <- cov(PCAscores[,1:2])
@@ -619,7 +622,7 @@ DDplot1 <- ggplot(distanceDF, aes(x = MD, y = OD, color = AnomalyScore)) +
   geom_point(alpha = 0.9, size = 2) +
   geom_point(data = distanceDF[distanceDF$AnomalyScore > anomalyThreshold,], 
              aes(x = MD, y = OD), shape = 1, size = 5, color = "red") +
-  xlab("Score distance") + 
+  xlab("Score distance (2 PC)") + 
   ylab("Orthogonal distance") +
   labs(color = "Anomaly Score") +
   theme_classic() +
@@ -636,7 +639,7 @@ DDplot2 <- ggplot(distanceDF, aes(x = MD, y = OD, color = Diagnosis)) +
   geom_point(alpha = 0.9, size = 2) +
   geom_point(data = distanceDF[distanceDF$AnomalyScore > anomalyThreshold,], 
              aes(x = MD, y = OD), shape = 1, size = 5, color = "red") +
-  xlab("Score distance") + 
+  xlab("Score distance (2 PC)") + 
   ylab("Orthogonal distance") +
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5,
@@ -654,7 +657,7 @@ logDDplot1 <- ggplot(distanceDF, aes(x = log(MD), y = log(OD), color = AnomalySc
   geom_point(alpha = 0.9, size = 2) +
   geom_point(data = distanceDF[distanceDF$AnomalyScore > anomalyThreshold,], 
              aes(x = log(MD), y = log(OD)), shape = 1, size = 5, color = "red") +
-  xlab("log Score distance") + 
+  xlab("log Score distance (2 PC)") + 
   ylab("log Orthogonal distance") +
   labs(color = "Anomaly Score") +
   theme_classic() +
@@ -671,7 +674,7 @@ logDDplot2 <- ggplot(distanceDF, aes(x = log(MD), y = log(OD), color = Diagnosis
   geom_point(alpha = 0.9, size = 2) +
   geom_point(data = distanceDF[distanceDF$AnomalyScore > anomalyThreshold,], 
              aes(x = log(MD), y = log(OD)), shape = 1, size = 5, color = "red") +
-  xlab("log Score distance") + 
+  xlab("log Score distance (2 PC)") + 
   ylab("log Orthogonal distance") +
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5,
@@ -817,6 +820,7 @@ load("dataMatrix_filtered.RData")
 load("featureInfo.RData")
 
 # Get Pairwise feature correlations
+# Use spearman correlation to capture non-linear relationships as well.
 correlations <- cor(dataMatrix_filtered, use="complete.obs", method="spearman")
 
 # Add feature names to columns correlation matrix
