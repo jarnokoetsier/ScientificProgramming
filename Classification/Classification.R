@@ -117,7 +117,9 @@ sampleInfo_B <- sampleInfo_filtered[sampleInfo_filtered$diagnosis == "Benign",]
 # Select training set (80% of the samples) using Kennard-stone algorithm
 selectedSamples_B <- prospectr::kenStone(
   X = dataMatrix_B, 
-  k = round(0.8*nrow(dataMatrix_B))
+  k = round(0.8*nrow(dataMatrix_B)),
+  .center = TRUE,
+  .scale = TRUE
   )
 
 # Select representative subset from the malignant samples
@@ -129,7 +131,9 @@ sampleInfo_M <- sampleInfo_filtered[sampleInfo_filtered$diagnosis == "Malignant"
 # Select training set (80% of the samples) using Kennard-stone algorithm
 selectedSamples_M <- prospectr::kenStone(
   X = dataMatrix_M, 
-  k = round(0.8*nrow(dataMatrix_M))
+  k = round(0.8*nrow(dataMatrix_M)),
+  .center = TRUE,
+  .scale = TRUE
 )
 
 
@@ -485,7 +489,7 @@ ggsave(plot = coeff_plot, filename = "coefficientPlot.png", width = 8, height = 
 # If needed, load the final model
 load("finalModel.RData")
 
-# Scale the test set
+# Scale the test set (using the mean and SD of the training data)
 testData_scaled <- t((t(testData) - rowMeans(t(trainingData)))/(apply(t(trainingData),1,sd)))
 
 # Remove exluded features from the data

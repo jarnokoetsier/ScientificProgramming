@@ -438,7 +438,7 @@ pcaList <-  prcomp(dataMatrix_malignant_scaled,
 # Explained variance
 explVar <- round(((pcaList$sdev^2)/sum(pcaList$sdev^2))*100,2)
 
-# collect PCA scores into a data frame
+# Collect PCA scores into a data frame
 plotPCA_scores <- as.data.frame(pcaList$x)
 plotPCA_scores$ID <- rownames(plotPCA_scores)
 
@@ -716,10 +716,10 @@ ClusterProbabilities <- ggplot() +
   scale_fill_manual(values = c(brewer.pal(3, "Set1"))) +
   theme_classic()
 
-# NOTE: warning message can be safely ignored :)
-
 # Save plot
 ggsave(ClusterProbabilities, file = "ClusterProbabilities.png", width = 10, height = 8)
+
+# NOTE: warning message can be safely ignored :)
 
 #.............................................................................#
 # As we already saw in the PCA plot and scatter plot. The red cluster encompasses

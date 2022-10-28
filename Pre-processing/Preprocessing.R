@@ -500,6 +500,9 @@ convergencePlot <- ggplot(sampleInfo,aes(AnomalyScore1000, AnomalyScore500)) +
 # Save plot
 ggsave(plot = convergencePlot, filename = "convergencePlot.png", width = 10, height = 8)
 
+# In the plot we see that converge has occurred!
+# So, we can use the anomaly scores reliably.
+
 # select threshold for outliers
 anomalyThreshold <- 0.652 
 

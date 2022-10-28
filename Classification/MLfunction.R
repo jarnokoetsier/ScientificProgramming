@@ -58,7 +58,7 @@ logisticRegression_par <- function(trainingData, trainingClass, nfold, nrep, alp
         X_train_combined <- cbind.data.frame(X_train, C_train)
         
         # Use ADASYN algorithm to create synthetic training data samples to deal 
-        # with class imbalance:
+        # with class imbalance (NOTE: k = 5 by default):
         ada_train <- AdasynClassif(C_train ~ ., dat = X_train_combined)
         X_train1 <- as.matrix(ada_train[,1:(ncol(ada_train)-1)])
         C_train1 <- ada_train[,ncol(ada_train)]
